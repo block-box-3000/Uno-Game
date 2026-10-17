@@ -147,7 +147,7 @@ public class Game
     public void PunishNextPlayer(int drawCount, int turnsSkipped)
     {
         Player victim = NextPlayer();
-        WildNoUCard? noU = victim.Hand.OfType<WildNoUCard>().FirstOrDefault();
+        WildNoUCard? noU = drawCount > 0 ? victim.Hand.OfType<WildNoUCard>().FirstOrDefault() : null;
 
         if (noU != null)
         {

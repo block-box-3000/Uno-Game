@@ -16,7 +16,14 @@ public class DrawCard : SkipCard
 
     protected override string Name => $"draw {DrawCount}";
 
-    public override void Apply(Game game) => game.PunishNextPlayer(DrawCount, TurnsSkipped);
+    public override void Apply(Game game)
+    {
+        if (game.Packs.HasFlag(ExpansionPacks.Stack))
+            game.ResolveStack(DrawCount);
+        else
+            game.PunishNextPlayer(DrawCount, TurnsSkipped);
+    }
+
     public override bool SharesSymbolWith(Card other) =>
     other is ReverseDrawCard
     || other.GetType() == typeof(DrawCard);
