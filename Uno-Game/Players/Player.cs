@@ -20,4 +20,10 @@ public abstract class Player
 
     /// <summary>Picks the color after playing a wild card.</summary>
     public abstract CardColor ChooseColor(Game game);
+
+    /// <summary>
+    /// Asked when this player is about to draw cards and holds a Wild No U card.
+    /// Returns true to play it and send the punishment back.
+    /// </summary>
+    public abstract bool ShouldPlayNoU(Game game, int drawCount);
 }

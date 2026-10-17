@@ -36,4 +36,11 @@ public class HumanPlayer : Player
         int option = ui.AskNumber("Select a color:\n1) Red\n2) Yellow\n3) Blue\n4) Green", 1, 4);
         return CardColors.Playable[option - 1];
     }
+
+    public override bool ShouldPlayNoU(Game game, int drawCount)
+    {
+        int option = ui.AskNumber(
+            $"{Name}, you have to draw {drawCount} card(s) and you have a Wild No U card. Play it?\n1) Yes\n2) No", 1, 2);
+        return option == 1;
+    }
 }

@@ -56,4 +56,7 @@ public class NpcPlayer : Player
 
         return best;
     }
+
+    //The NPC always sends the punishment back
+    public override bool ShouldPlayNoU(Game game, int drawCount) => true;
 }

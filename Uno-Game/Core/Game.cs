@@ -141,33 +141,42 @@ public class Game
     }
 
     /// <summary>
-    /// The next player draws cards and/or skips turns. If that player holds a
-    /// Wild No U card, the punishment goes back to the player who played the card.
+    /// The next player draws cards and/or skips turns. A player who would draw cards and holds a
+    /// Wild No U card may play it in response (<see cref="Player.ShouldPlayNoU"/>): the direction
+    /// reverses, they choose the color and the punishment goes back to the player who played the card.
     /// </summary>
     public void PunishNextPlayer(int drawCount, int turnsSkipped)
     {
+        Player attacker = CurrentPlayer;
         Player victim = NextPlayer();
-        WildNoUCard? noU = drawCount > 0 ? victim.Hand.OfType<WildNoUCard>().FirstOrDefault() : null;
 
-        if (noU != null)
+        //Wild No U only answers cards that make you draw
+        WildNoUCard? noU = drawCount > 0
+            ? victim.Hand.OfType<WildNoUCard>().FirstOrDefault()
+            : null;
+
+        if (noU != null && victim.ShouldPlayNoU(this, drawCount))
         {
-            string punishment = drawCount > 0
-                ? $"{victim.Name} draws {drawCount} card(s)"
-                : $"Skipped {turnsSkipped} turn(s)";
-
-            ui.Show(punishment, MessageStyle.Event);
+            ui.Show($"{victim.Name} draws {drawCount} card(s)", MessageStyle.Event);
             ui.Pause(ShortDelayMs);
             ui.Show("\nBut wait...\n", MessageStyle.Npc);
             ui.Pause(ShortDelayMs);
-            ui.Show($"{victim.Name} has a Wild No U Card and reverse the punishment\n", MessageStyle.Event);
+            ui.Show($"{victim.Name} plays a Wild No U Card and reverse the punishment\n", MessageStyle.Event);
             ui.Pause(TurnDelayMs);
 
-            victim.Hand.Remove(noU);
-            Deck.Discard(noU);
+            //The victim really plays the card: it becomes the top card (so it can win the game)
+            currentIndex = victim.Index;
+            PlayCard(victim, noU, announce: false);
+            if (HasWon(victim))
+                return;
+
+            //The victim chooses the color that continues play (after PlayCard, which resets it)
+            ChooseColor();
             Reverse();
 
-            //The punishment goes back to whoever played the card
-            victim = CurrentPlayer;
+            //The punishment goes back to whoever played the Draw card
+            currentIndex = attacker.Index;
+            victim = attacker;
         }
 
         ApplyPunishment(victim, drawCount, turnsSkipped);

@@ -32,6 +32,5 @@ public class StackCard : Card
     //A Stack card goes on another Stack card of any color. On a Draw card it needs the same color,
     //which the normal color rule already covers
     public override bool SharesSymbolWith(Card other) =>
-        other is StackCard
-        || other is ReverseDrawCard;
+        other is StackCard stackCard && DrawCount == stackCard.DrawCount;
 }
