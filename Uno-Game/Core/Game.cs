@@ -195,16 +195,21 @@ public class Game
 
         while (true)
         {
-            //Cheapest answer first, so wild stack cards are saved for when they are needed
+            //Cheapest first, so wild stack cards are saved for when they are needed
             Player next = NextPlayer();
-            StackCard? answer = next.Hand
+            List<StackCard> answers = next.Hand
                 .OfType<StackCard>()
                 .Where(CanAnswerStack)
                 .OrderBy(card => card.Points)
-                .FirstOrDefault();
+                .ToList();
 
+            //Answering is optional: the player may refuse and draw the stack
+            StackCard? answer = answers.Count > 0 ? next.ChooseStackAnswer(this, answers, stack) : null;
             if (answer == null)
                 break;
+
+            if (!answers.Contains(answer))
+                throw new InvalidOperationException($"{next.Name} chose a card that can't answer the stack: {answer}");
 
             currentIndex = next.Index;
             PlayCard(next, answer, announce: false);

@@ -1,4 +1,5 @@
 using Uno_Game.Cards;
+using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 using Uno_Game.UI;
 
@@ -42,5 +43,16 @@ public class HumanPlayer : Player
         int option = ui.AskNumber(
             $"{Name}, you have to draw {drawCount} card(s) and you have a Wild No U card. Play it?\n1) Yes\n2) No", 1, 2);
         return option == 1;
+    }
+
+    public override StackCard? ChooseStackAnswer(Game game, IReadOnlyList<StackCard> answers, int pendingPenalty)
+    {
+        string options = string.Join("\n", answers.Select((card, i) => $"{i + 1}) Add {card}"));
+        int option = ui.AskNumber(
+            $"{Name}, the stack is at {pendingPenalty} card(s) (top card: {game.TopCard}). Answer?\n" +
+            $"0) Don't answer: draw {pendingPenalty} card(s) and lose your turn\n{options}",
+            0, answers.Count);
+
+        return option == 0 ? null : answers[option - 1];
     }
 }

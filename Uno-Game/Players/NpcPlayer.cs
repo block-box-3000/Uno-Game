@@ -1,4 +1,5 @@
 using Uno_Game.Cards;
+using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 
 namespace Uno_Game.Players;
@@ -59,4 +60,8 @@ public class NpcPlayer : Player
 
     //The NPC always sends the punishment back
     public override bool ShouldPlayNoU(Game game, int drawCount) => true;
+
+    //The NPC always answers, with the cheapest card (the list comes sorted)
+    public override StackCard? ChooseStackAnswer(Game game, IReadOnlyList<StackCard> answers, int pendingPenalty) =>
+        answers[0];
 }
