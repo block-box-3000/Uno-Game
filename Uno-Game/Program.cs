@@ -4,24 +4,19 @@ using Uno_Game.Cards;
 using Uno_Game.Core;
 using Uno_Game.UI;
 using Uno_Game.Cards.SwapPack;
+using Uno_Game.Cards.SpeedPack;
 
 var ui = new ConsoleUi();
 
 ExpansionPacks packs = PackMenu.Select(ui);
 Console.Clear();
 
-Game game = Game.CreateStandard(packs, ui);
-/*#if DEBUG
+Game game = Game.CreateStandard(packs, ui, 6);
+#if DEBUG
 game.ForceTopCard(new NumberCard(CardColor.Blue, 1));
 
 var hand = game.Players[0].Hand;
-hand.Add(new WildPassHandsCard());
-hand = game.Players[1].Hand;
-hand.Add(new WildPassHandsCard());
-hand = game.Players[2].Hand;
-hand.Add(new WildPassHandsCard());
-hand = game.Players[3].Hand;
-hand.Add(new WildPassHandsCard());
+hand.Add(new WildSpeedCard());
 
-#endif*/
+#endif
 game.Run();

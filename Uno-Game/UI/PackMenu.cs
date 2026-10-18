@@ -10,6 +10,7 @@ public static class PackMenu
         ("Reverse pack", ExpansionPacks.Reverse),
         ("Stack pack", ExpansionPacks.Stack),
         ("Swap pack", ExpansionPacks.Swap),
+        ("Speed pack", ExpansionPacks.Speed),
     };
 
     public static ExpansionPacks Select(IGameUi ui)

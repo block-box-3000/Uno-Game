@@ -1,5 +1,6 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.ReversePack;
+using Uno_Game.Cards.SpeedPack;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Cards.SwapPack;
 
@@ -162,12 +163,25 @@ public class Deck
                 yield return new SwapOneCard(color);
                 yield return new RefreshHandCard(color);
             }
-            
+
             for (int i = 0; i < 4; i++)
             {
                 yield return new WildForceTradeCard();
                 yield return new WildPassHandsCard();
             }
+        }
+
+        if (packs.HasFlag(ExpansionPacks.Speed))
+        {
+            //Three consecutive numbers per color, as in the real pack
+            foreach (var (color, first) in new[] { (CardColor.Yellow, 1), (CardColor.Red, 3), (CardColor.Blue, 5), (CardColor.Green, 7) })
+            {
+                for (int number = first; number < first + 3; number++)
+                    yield return new NumberSpeedCard(color, number);
+            }
+
+            for (int i = 0; i < 4; i++)
+                yield return new WildSpeedCard();
         }
     }
 }

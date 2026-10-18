@@ -21,6 +21,7 @@ public class Game
     private readonly List<Player> players;
     private int currentIndex;
     private bool repeatTurn;
+    private bool colorChosen;
 
     public IReadOnlyList<Player> Players => players;
     public Deck Deck { get; }
@@ -33,6 +34,12 @@ public class Game
 
     /// <summary>1: clockwise, -1: anticlockwise.</summary>
     public int Direction { get; private set; } = 1;
+
+    /// <summary>
+    /// Speed pack: how many cards each player must play on their turn. Starts at 1 and only goes back
+    /// to 1 when someone can't keep up.
+    /// </summary>
+    public int SpeedLevel { get; private set; } = 1;
 
     public Player CurrentPlayer => players[currentIndex];
     public Player? Winner { get; private set; }
@@ -83,26 +90,63 @@ public class Game
     public void PlayTurn()
     {
         Player player = CurrentPlayer;
-        List<Card> playable = player.Hand.Where(IsPlayable).ToList();
 
-        if (playable.Count == 0)
+        //Speed pack: the speed level when the turn starts is how many cards the player must play.
+        //Speed-up icons played during the turn only count for the next player.
+        int required = SpeedLevel;
+        int played = 0;
+        Card? lastPlayed = null;
+
+        while (played < required)
         {
-            ui.Show($"No cards available for {player.Name}, draw 1 card", MessageStyle.Warning);
-            DrawCards(player, 1);
-        }
-        else
-        {
+            List<Card> playable = player.Hand.Where(IsPlayable).ToList();
+            if (playable.Count == 0)
+                break;
+
+            if (required > 1)
+                ui.Show($"{player.Name}: card {played + 1} of {required}", MessageStyle.Event);
+
             Card card = player.ChooseCard(this, playable);
             if (!playable.Contains(card))
                 throw new InvalidOperationException($"{player.Name} chose a card that can't be played: {card}");
 
             PlayCard(player, card, announce: true);
+            played++;
+            lastPlayed = card;
             if (HasWon(player))
                 return;
 
-            card.Apply(this);
-            if (Winner != null)
-                return;
+            if (played == required)
+            {
+                //Only the last card of the turn has its effect
+                card.Apply(this);
+                if (Winner != null)
+                    return;
+            }
+            else if (card.IsWild)
+            {
+                //Not the last card, but the color is needed to keep playing
+                ChooseColor();
+            }
+        }
+
+        if (played < required)
+        {
+            //Can't keep up: the card played last still counts, then the player draws the speed level
+            if (lastPlayed != null)
+            {
+                lastPlayed.Apply(this);
+                if (Winner != null)
+                    return;
+            }
+
+            if (required == 1)
+                ui.Show($"No cards available for {player.Name}, draw 1 card", MessageStyle.Warning);
+            else
+                ui.Show($"{player.Name} can't keep up with the speed! Draws {required} card(s)", MessageStyle.Warning);
+
+            DrawCards(player, required);
+            ResetSpeed();
         }
 
         ui.Pause(TurnDelayMs);
@@ -119,8 +163,14 @@ public class Game
 
     public void ChooseColor()
     {
+        //A wild card chooses its color only once: it may already be chosen if the card was
+        //played in the middle of a speed turn and later turned out to be the last one
+        if (colorChosen)
+            return;
+
         Player player = CurrentPlayer;
         CurrentColor = player.ChooseColor(this);
+        colorChosen = true;
 
         if (!player.IsHuman)
             ui.Show($"{player.Name} selected color {CurrentColor.ToString().ToLower()}", MessageStyle.Event);
@@ -357,9 +407,29 @@ public class Game
         Deck.Discard(TopCard);
         TopCard = card;
         CurrentColor = card.Color; //Wild cards choose their color in Apply
+        colorChosen = false;
 
         if (announce && !player.IsHuman)
             ui.Show($"{player.Name} use the card: {card}", MessageStyle.Npc);
+
+        //Every Speed Up icon counts as soon as the card is played, even in the middle of a turn
+        if (card.SpeedUp > 0)
+            IncreaseSpeed(card.SpeedUp);
+    }
+
+    private void IncreaseSpeed(int levels)
+    {
+        SpeedLevel += levels;
+        ui.Show($"Speed level is now {SpeedLevel}", MessageStyle.Event);
+    }
+
+    private void ResetSpeed()
+    {
+        if (SpeedLevel == 1)
+            return;
+
+        SpeedLevel = 1;
+        ui.Show("Speed level goes back to 1", MessageStyle.Event);
     }
 
     /// <summary>Says UNO! when one card is left. Returns true if the player just won.</summary>

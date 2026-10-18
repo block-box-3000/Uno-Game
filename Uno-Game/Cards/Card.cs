@@ -23,6 +23,9 @@ public abstract class Card
     /// </summary>
     public virtual bool SharesSymbolWith(Card other) => GetType() == other.GetType();
 
+    /// <summary>Speed pack: how many speed levels this card adds when played (its "Speed Up" icons).</summary>
+    public virtual int SpeedUp => 0;
+
     /// <summary>The effect of the card. Called right after the card is played.</summary>
     public abstract void Apply(Game game);
 
