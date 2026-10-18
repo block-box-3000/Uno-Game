@@ -64,4 +64,35 @@ public class NpcPlayer : Player
     //The NPC always answers, with the cheapest card (the list comes sorted)
     public override StackCard? ChooseStackAnswer(Game game, IReadOnlyList<StackCard> answers, int pendingPenalty) =>
         answers[0];
+
+    //Swap 1: give the most expensive card to the player with the most cards (the least dangerous one)
+    public override SwapChoice ChooseSwap(Game game)
+    {
+        Player target = game.Players
+            .Where(player => player != this)
+            .OrderByDescending(player => player.Hand.Count)
+            .First();
+
+        Card give = Hand.OrderByDescending(card => card.Points).First();
+        return new SwapChoice(target, give);
+    }
+
+    //Force trade: take the smallest hand if it is smaller than mine, otherwise hit the leader
+    public override (Player First, Player Second) ChooseTradePlayers(Game game)
+    {
+        List<Player> others = game.Players
+            .Where(player => player != this)
+            .OrderBy(player => player.Hand.Count)
+            .ToList();
+
+        //With two players there is only one possible pair
+        if (others.Count == 1)
+            return (this, others[0]);
+
+        Player fewest = others[0];
+        if (fewest.Hand.Count < Hand.Count)
+            return (this, fewest);
+
+        return (fewest, others[^1]);
+    }
 }

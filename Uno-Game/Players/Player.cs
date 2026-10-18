@@ -33,4 +33,10 @@ public abstract class Player
     /// (cheapest first) to add it to the stack, or null to refuse and draw the whole stack.
     /// </summary>
     public abstract StackCard? ChooseStackAnswer(Game game, IReadOnlyList<StackCard> answers, int pendingPenalty);
+
+    /// <summary>Swap pack, Swap 1: who to take a random card from and which card to give them.</summary>
+    public abstract SwapChoice ChooseSwap(Game game);
+
+    /// <summary>Swap pack, Wild Force Trade: the two different players that swap hands (can include this player).</summary>
+    public abstract (Player First, Player Second) ChooseTradePlayers(Game game);
 }

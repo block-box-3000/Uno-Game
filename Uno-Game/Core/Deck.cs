@@ -1,6 +1,7 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.ReversePack;
 using Uno_Game.Cards.StackPack;
+using Uno_Game.Cards.SwapPack;
 
 namespace Uno_Game.Core;
 
@@ -151,6 +152,21 @@ public class Deck
             {
                 yield return new WildStackCard();
                 yield return new WildStackNumberCard();
+            }
+        }
+
+        if (packs.HasFlag(ExpansionPacks.Swap))
+        {
+            foreach (CardColor color in CardColors.Playable)
+            {
+                yield return new SwapOneCard(color);
+                yield return new RefreshHandCard(color);
+            }
+            
+            for (int i = 0; i < 4; i++)
+            {
+                yield return new WildForceTradeCard();
+                yield return new WildPassHandsCard();
             }
         }
     }

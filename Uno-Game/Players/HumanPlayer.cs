@@ -55,4 +55,42 @@ public class HumanPlayer : Player
 
         return option == 0 ? null : answers[option - 1];
     }
+
+    public override SwapChoice ChooseSwap(Game game)
+    {
+        List<Player> others = game.Players.Where(player => player != this).ToList();
+
+        Player target = others[0];
+        if (others.Count > 1)
+        {
+            int option = ui.AskNumber(
+                $"Swap 1: choose the player you take a random card from\n{DescribePlayers(others)}", 1, others.Count);
+            target = others[option - 1];
+        }
+
+        string cards = string.Join("\n", Hand.Select((card, i) => $"{i + 1}) {card}"));
+        int give = ui.AskNumber($"Choose the card you give to {target.Name}\n{cards}", 1, Hand.Count);
+
+        return new SwapChoice(target, Hand[give - 1]);
+    }
+
+    public override (Player First, Player Second) ChooseTradePlayers(Game game)
+    {
+        List<Player> all = game.Players.ToList();
+
+        //With two players there is only one possible pair
+        if (all.Count == 2)
+            return (all[0], all[1]);
+
+        int first = ui.AskNumber($"Force trade: choose the first player\n{DescribePlayers(all)}", 1, all.Count);
+
+        List<Player> rest = all.Where(player => player != all[first - 1]).ToList();
+        int second = ui.AskNumber($"Choose the second player\n{DescribePlayers(rest)}", 1, rest.Count);
+
+        return (all[first - 1], rest[second - 1]);
+    }
+
+    private string DescribePlayers(IEnumerable<Player> players) =>
+        string.Join("\n", players.Select((player, i) =>
+            $"{i + 1}) {player.Name}{(player == this ? " (you)" : "")} ({player.Hand.Count} cards)"));
 }
