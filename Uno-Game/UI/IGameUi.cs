@@ -23,6 +23,9 @@ public interface IGameUi
     /// <summary>Shows the top card and the player's hand (playable cards highlighted).</summary>
     void ShowTable(Card topCard, CardColor currentColor, IReadOnlyList<Card> hand, Func<Card, bool> isPlayable);
 
+    /// <summary>Billie pack, Reverse Hands: shows every player's hand face up.</summary>
+    void ShowHands(IReadOnlyList<(string PlayerName, IReadOnlyList<Card> Cards)> hands);
+
     /// <summary>Asks for a number between min and max (both included).</summary>
     int AskNumber(string prompt, int min, int max);
 

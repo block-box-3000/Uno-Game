@@ -11,6 +11,7 @@ public static class PackMenu
         ("Stack pack", ExpansionPacks.Stack),
         ("Swap pack", ExpansionPacks.Swap),
         ("Speed pack", ExpansionPacks.Speed),
+        ("Billie Eilish pack", ExpansionPacks.Billie),
     };
 
     public static ExpansionPacks Select(IGameUi ui)

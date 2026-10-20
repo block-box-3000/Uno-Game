@@ -48,6 +48,43 @@ public class ConsoleUi : IGameUi
         Console.ResetColor();
     }
 
+    public void ShowHands(IReadOnlyList<(string PlayerName, IReadOnlyList<Card> Cards)> hands)
+    {
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        Console.WriteLine("---- Hands on the table ----");
+
+        foreach (var (playerName, cards) in hands)
+        {
+            Console.ResetColor();
+            Console.Write($"{playerName} ({cards.Count}): ");
+
+            //Each card in its own color
+            for (int i = 0; i < cards.Count; i++)
+            {
+                Console.ForegroundColor = ToConsoleColor(cards[i].Color);
+                Console.Write(cards[i]);
+                Console.ResetColor();
+                if (i < cards.Count - 1)
+                    Console.Write(", ");
+            }
+
+            Console.WriteLine();
+        }
+
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        Console.WriteLine("----------------------------");
+        Console.ResetColor();
+    }
+
+    private static ConsoleColor ToConsoleColor(CardColor color) => color switch
+    {
+        CardColor.Red => ConsoleColor.Red,
+        CardColor.Yellow => ConsoleColor.Yellow,
+        CardColor.Blue => ConsoleColor.Blue,
+        CardColor.Green => ConsoleColor.Green,
+        _ => ConsoleColor.White
+    };
+
     public int AskNumber(string prompt, int min, int max)
     {
         if (!string.IsNullOrEmpty(prompt))

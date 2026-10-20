@@ -1,4 +1,5 @@
 using Uno_Game.Cards;
+using Uno_Game.Cards.BilliePack;
 using Uno_Game.Cards.ReversePack;
 using Uno_Game.Cards.SpeedPack;
 using Uno_Game.Cards.StackPack;
@@ -182,6 +183,20 @@ public class Deck
 
             for (int i = 0; i < 4; i++)
                 yield return new WildSpeedCard();
+        }
+
+        if (packs.HasFlag(ExpansionPacks.Billie))
+        {
+            //Reverse Hands is the only colored card of the pack: one per color
+            foreach (CardColor color in CardColors.Playable)
+                yield return new ReverseHandsCard(color);
+
+            for (int i = 0; i < 4; i++)
+            {
+                yield return new WildPassColorCard();
+                yield return new TrickWildCard();
+                yield return new WildColorChallengeCard();
+            }
         }
     }
 }

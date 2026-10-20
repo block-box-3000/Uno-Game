@@ -23,6 +23,12 @@ public class Game
     private bool repeatTurn;
     private bool colorChosen;
 
+    //Billie pack
+    private Player? handsOwner;     //Reverse Hands: hands stay face up until this player starts their next turn
+    private Player? trickOwner;     //Trick Wild Card: who played it...
+    private Player? trickVictim;    //...and the player who must answer it
+    private Player? forcedNext;     //Who plays right after the current turn, overriding the normal order
+
     public IReadOnlyList<Player> Players => players;
     public Deck Deck { get; }
     public ExpansionPacks Packs { get; }
@@ -91,6 +97,35 @@ public class Game
     {
         Player player = CurrentPlayer;
 
+        //Billie pack: Reverse Hands ends when its owner starts their next turn
+        if (handsOwner == player)
+        {
+            handsOwner = null;
+            ui.Show("The hands are face down again", MessageStyle.Event);
+        }
+        else if (handsOwner != null)
+        {
+            ShowRevealedHands();
+        }
+
+        //Billie pack: a Trick Wild Card stays active, round after round, until its victim can play.
+        //trickPlayer is the owner when it is the victim's turn and they have nothing to play.
+        Player? trickPlayer = null;
+        if (trickVictim != null)
+        {
+            if (player == trickVictim)
+            {
+                if (player.Hand.Any(IsPlayable))
+                    ClearTrick();           //The victim can play: the trick is over
+                else
+                    trickPlayer = trickOwner;
+            }
+            else if (player != trickOwner)
+            {
+                ClearTrick();               //The turn order moved on (a skip, for example): the trick is over
+            }
+        }
+
         //Speed pack: the speed level when the turn starts is how many cards the player must play.
         //Speed-up icons played during the turn only count for the next player.
         int required = SpeedLevel;
@@ -147,6 +182,10 @@ public class Game
 
             DrawCards(player, required);
             ResetSpeed();
+
+            //Trick Wild Card: the player couldn't play anything
+            if (trickPlayer != null && played == 0 && ResolveTrick(player, trickPlayer, required))
+                return;
         }
 
         ui.Pause(TurnDelayMs);
@@ -375,6 +414,156 @@ public class Game
         ui.Show($"Everybody passes their hand to the next player ({flow})", MessageStyle.Event);
     }
 
+    // ---------------------------------------------------------------- Billie Eilish pack
+
+    /// <summary>
+    /// Wild Pass Color: every player passes all their cards of the chosen color to the player on their left
+    /// (the next one in clockwise order, whatever the current direction). Players without that color pass
+    /// nothing but still receive the cards passed to them.
+    /// </summary>
+    public void PassColor()
+    {
+        CardColor color = CurrentColor;
+        int count = players.Count;
+
+        List<List<Card>> passed = players.Select(player => player.Hand.Where(card => card.Color == color).ToList()).ToList();
+
+        foreach (Player player in players)
+            player.Hand.RemoveAll(card => card.Color == color);
+
+        for (int i = 0; i < count; i++)
+            players[(i + 1) % count].Hand.AddRange(passed[i]);
+
+        for (int i = 0; i < count; i++)
+        {
+            Player giver = players[i];
+            Player receiver = players[(i + 1) % count];
+            if (passed[i].Count == 0)
+                continue;
+
+            //Humans see exactly which cards moved; for the rest it stays secret
+            if (giver.IsHuman)
+                ui.Show($"You pass {string.Join(", ", passed[i])} to {receiver.Name}", MessageStyle.Event);
+            else if (receiver.IsHuman)
+                ui.Show($"{giver.Name} passes you {string.Join(", ", passed[i])}", MessageStyle.Event);
+            else
+                ui.Show($"{giver.Name} passes {passed[i].Count} {color} card(s) to {receiver.Name}", MessageStyle.Event);
+        }
+
+        //A hand that ends up empty wins (starting with the current player)
+        for (int k = 0; k < count; k++)
+        {
+            Player player = players[WrapIndex(currentIndex + k)];
+            if (player.Hand.Count == 0)
+            {
+                DeclareWinner(player);
+                return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Trick Wild Card: every time the next player can't play, the current player plays again,
+    /// until that player manages to play (see <see cref="ResolveTrick"/>).
+    /// </summary>
+    public void SetTrick()
+    {
+        trickOwner = CurrentPlayer;
+        trickVictim = NextPlayer();
+        ui.Show($"Trick! {trickOwner.Name} keeps playing until {trickVictim.Name} can play a {CurrentColor} card", MessageStyle.Event);
+    }
+
+    /// <summary>
+    /// The victim of a Trick Wild Card had nothing to play and already drew. If they drew a single card and
+    /// it can be played, they play it and the trick is over. Otherwise the owner plays again and the trick
+    /// stays active: it repeats every round until the victim manages to play. Returns true if the game is over.
+    /// </summary>
+    private bool ResolveTrick(Player victim, Player owner, int drawn)
+    {
+        if (drawn == 1)
+        {
+            Card card = victim.Hand[^1];
+            if (IsPlayable(card))
+            {
+                //Cleared first: the card they play may start a new trick
+                ClearTrick();
+                ui.Show($"{victim.Name} draws {card}, which can be played", MessageStyle.Event);
+                PlayCard(victim, card, announce: true);
+                if (HasWon(victim))
+                    return true;
+
+                card.Apply(this);
+                return Winner != null;
+            }
+        }
+
+        ui.Show($"{owner.Name} plays again (still waiting for {victim.Name})", MessageStyle.Event);
+        forcedNext = owner;
+        return false;
+    }
+
+    private void ClearTrick()
+    {
+        trickOwner = null;
+        trickVictim = null;
+    }
+
+    /// <summary>
+    /// Wild Color Challenge: every other player must show a card of the chosen color. Whoever can't draws 2 cards;
+    /// if everybody shows one, the current player draws 3.
+    /// </summary>
+    public void ColorChallenge()
+    {
+        Player challenger = CurrentPlayer;
+        CardColor color = CurrentColor;
+        bool everybodyShowed = true;
+
+        ui.Show($"Color challenge! Everybody shows a {color} card", MessageStyle.Event);
+
+        for (int k = 1; k < players.Count; k++)
+        {
+            Player other = players[WrapIndex(currentIndex + k * Direction)];
+            Card? shown = other.Hand.FirstOrDefault(card => card.Color == color);
+
+            if (shown == null)
+            {
+                everybodyShowed = false;
+                ui.Show($"{other.Name} has no {color} card and draws 2 cards", MessageStyle.Event);
+                DrawCards(other, 2);
+            }
+            else if (other.IsHuman)
+            {
+                ui.Show($"You show {shown}", MessageStyle.Event);
+            }
+            else
+            {
+                //Only the challenger gets to see the card
+                string text = challenger.IsHuman ? shown.ToString() : $"a {color} card";
+                ui.Show($"{other.Name} shows {text}", MessageStyle.Event);
+            }
+        }
+
+        if (everybodyShowed)
+        {
+            ui.Show($"Everybody showed a {color} card: {challenger.Name} draws 3 cards", MessageStyle.Event);
+            DrawCards(challenger, 3);
+        }
+    }
+
+    /// <summary>
+    /// Reverse Hands: every hand is shown face up at the start of each turn until the player
+    /// who played the card starts their next turn.
+    /// </summary>
+    public void RevealHands()
+    {
+        handsOwner = CurrentPlayer;
+        ui.Show($"{handsOwner.Name} plays Reverse Hands! Everybody lays their hand face up until {handsOwner.Name}'s next turn",
+            MessageStyle.Event);
+    }
+
+    private void ShowRevealedHands() =>
+        ui.ShowHands(players.Select(player => (player.Name, (IReadOnlyList<Card>)player.Hand.ToList())).ToList());
+
     // ---------------------------------------------------------------- internals
 
     private void ApplyPunishment(Player victim, int drawCount, int turnsSkipped)
@@ -441,16 +630,28 @@ public class Game
         }
         else if (player.Hand.Count == 0)
         {
-            Winner = player;
-            ui.Show($"\n{player.Name} wins!", MessageStyle.Success);
+            DeclareWinner(player);
             return true;
         }
 
         return false;
     }
 
+    private void DeclareWinner(Player player)
+    {
+        Winner = player;
+        ui.Show($"\n{player.Name} wins!", MessageStyle.Success);
+    }
+
     private void AdvanceTurn()
     {
+        if (forcedNext != null)
+        {
+            currentIndex = forcedNext.Index;
+            forcedNext = null;
+            return;
+        }
+
         if (repeatTurn)
         {
             repeatTurn = false;

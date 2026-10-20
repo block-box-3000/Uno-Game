@@ -5,18 +5,24 @@ using Uno_Game.Core;
 using Uno_Game.UI;
 using Uno_Game.Cards.SwapPack;
 using Uno_Game.Cards.SpeedPack;
+using Uno_Game.Cards.BilliePack;
 
 var ui = new ConsoleUi();
 
 ExpansionPacks packs = PackMenu.Select(ui);
 Console.Clear();
 
-Game game = Game.CreateStandard(packs, ui, 6);
-#if DEBUG
+Game game = Game.CreateStandard(packs, ui);
+/*#if DEBUG
 game.ForceTopCard(new NumberCard(CardColor.Blue, 1));
 
 var hand = game.Players[0].Hand;
-hand.Add(new WildSpeedCard());
+hand.Add(new TrickWildCard());
+hand = game.Players[1].Hand;
+hand.Clear();
+hand.Add(new NumberCard(CardColor.Blue,1));
+hand.Add(new NumberCard(CardColor.Blue,1));
+hand.Add(new NumberCard(CardColor.Blue,1));
 
-#endif
+#endif*/
 game.Run();
