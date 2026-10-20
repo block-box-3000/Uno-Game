@@ -10,7 +10,7 @@ public enum ExpansionPacks
     Speed = 1 << 3,
 
     // Planned packs (not implemented yet)
-    Frienemies = 1 << 4,
+    Frenemies = 1 << 4,
     Defense = 1 << 5,
     Comeback = 1 << 6,
     Billie = 1 << 7,
