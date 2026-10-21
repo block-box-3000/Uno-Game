@@ -1,5 +1,6 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.BilliePack;
+using Uno_Game.Cards.FrenemiesPack;
 using Uno_Game.Cards.ReversePack;
 using Uno_Game.Cards.SpeedPack;
 using Uno_Game.Cards.StackPack;
@@ -196,6 +197,18 @@ public class Deck
                 yield return new WildPassColorCard();
                 yield return new TrickWildCard();
                 yield return new WildColorChallengeCard();
+            }
+        }
+
+        if (packs.HasFlag(ExpansionPacks.Frenemies))
+        {
+            //All the cards of the pack are wild
+            for (int i = 0; i < 4; i++)
+            {
+                yield return new WildPettyPlayCard();
+                yield return new WildNemesisCard();
+                yield return new WildEliminatorCard();
+                yield return new WildInstigatorCard();
             }
         }
     }

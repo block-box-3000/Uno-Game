@@ -39,4 +39,25 @@ public abstract class Player
 
     /// <summary>Swap pack, Wild Force Trade: the two different players that swap hands (can include this player).</summary>
     public abstract (Player First, Player Second) ChooseTradePlayers(Game game);
+
+    /// <summary>Frenemies pack, Wild Nemesis: the player (among the <paramref name="candidates"/>) this player names as their enemy.</summary>
+    public abstract Player ChooseEnemy(Game game, IReadOnlyList<Player> candidates);
+
+    /// <summary>
+    /// Frenemies pack, Wild Nemesis: asked at the start of each of this player's turns for every enemy they have.
+    /// Returns true to end the beef with <paramref name="enemy"/>.
+    /// </summary>
+    public abstract bool ShouldEndNemesis(Game game, Player enemy);
+
+    /// <summary>Frenemies pack, Wild Petty Play played on your turn: the player who draws 3 cards.</summary>
+    public abstract Player ChoosePettyPlayTarget(Game game);
+
+    /// <summary>Frenemies pack, Wild Instigator: the opponents who draw, and how many cards (1-4) each one draws.</summary>
+    public abstract IReadOnlyList<(Player Target, int Cards)> ChooseInstigatorTargets(Game game);
+
+    /// <summary>
+    /// Frenemies pack: asked when <paramref name="source"/> makes this player draw cards and they hold a
+    /// Wild Petty Play. Returns true to play it out of turn so the source draws 3 cards.
+    /// </summary>
+    public abstract bool ShouldPlayPettyPlay(Game game, Player source, int drawCount);
 }

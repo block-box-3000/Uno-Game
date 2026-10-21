@@ -77,6 +77,29 @@ public class NpcPlayer : Player
         return new SwapChoice(target, give);
     }
 
+    //Frenemies pack: the NPC goes after whoever is closest to winning
+    public override Player ChooseEnemy(Game game, IReadOnlyList<Player> candidates) =>
+        candidates.OrderBy(player => player.Hand.Count).First();
+
+    //Each round the NPC ends the beef with 40% chance: rnd.Next(1, 11) is 1-10 and 7-10 ends it
+    public override bool ShouldEndNemesis(Game game, Player enemy) => rng.Next(1, 11) > 6;
+
+    public override Player ChoosePettyPlayTarget(Game game) => ClosestToWinning(game);
+
+    //4 cards for the leader, then 3, 2 and 1 for the rest
+    public override IReadOnlyList<(Player Target, int Cards)> ChooseInstigatorTargets(Game game) =>
+        game.Players
+            .Where(player => player != this)
+            .OrderBy(player => player.Hand.Count)
+            .Select((player, i) => (player, Math.Max(1, 4 - i)))
+            .ToList();
+
+    //The NPC always gets even
+    public override bool ShouldPlayPettyPlay(Game game, Player source, int drawCount) => true;
+
+    private Player ClosestToWinning(Game game) =>
+        game.Players.Where(player => player != this).OrderBy(player => player.Hand.Count).First();
+
     //Force trade: take the smallest hand if it is smaller than mine, otherwise hit the leader
     public override (Player First, Player Second) ChooseTradePlayers(Game game)
     {

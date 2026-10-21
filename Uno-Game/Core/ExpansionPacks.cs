@@ -8,11 +8,11 @@ public enum ExpansionPacks
     Stack = 1 << 1,
     Swap = 1 << 2,
     Speed = 1 << 3,
+    Frenemies = 1 << 4,
+    Billie = 1 << 7,
 
     // Planned packs (not implemented yet)
-    Frenemies = 1 << 4,
     Defense = 1 << 5,
     Comeback = 1 << 6,
-    Billie = 1 << 7,
     NoMercy = 1 << 8
 }

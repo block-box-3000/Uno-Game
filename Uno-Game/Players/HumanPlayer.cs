@@ -90,6 +90,60 @@ public class HumanPlayer : Player
         return (all[first - 1], rest[second - 1]);
     }
 
+    public override Player ChooseEnemy(Game game, IReadOnlyList<Player> candidates) =>
+        ChoosePlayer(candidates, "Wild Nemesis: choose your enemy");
+
+    public override bool ShouldEndNemesis(Game game, Player enemy)
+    {
+        int option = ui.AskNumber(
+            $"{Name}, {enemy.Name} is still your enemy (Wild Nemesis). End the beef?\n1) Yes, end it\n2) No, keep it", 1, 2);
+        return option == 1;
+    }
+
+    public override Player ChoosePettyPlayTarget(Game game) =>
+        ChoosePlayer(game.Players.Where(player => player != this).ToList(), "Wild Petty Play: choose the player who draws 3 cards");
+
+    private Player ChoosePlayer(IReadOnlyList<Player> candidates, string question)
+    {
+        //With a single candidate there is nothing to choose
+        if (candidates.Count == 1)
+            return candidates[0];
+
+        int option = ui.AskNumber($"{question}\n{DescribePlayers(candidates)}", 1, candidates.Count);
+        return candidates[option - 1];
+    }
+
+    public override IReadOnlyList<(Player Target, int Cards)> ChooseInstigatorTargets(Game game)
+    {
+        var targets = new List<(Player Target, int Cards)>();
+        List<Player> remaining = game.Players.Where(player => player != this).ToList();
+
+        //Pick a player, then how many cards (1-4); that player leaves the list. 0 stops choosing.
+        while (remaining.Count > 0)
+        {
+            int option = ui.AskNumber(
+                $"Wild Instigator: choose a player to make draw cards\n{DescribePlayers(remaining)}\n0) Done", 0, remaining.Count);
+            if (option == 0)
+                break;
+
+            Player target = remaining[option - 1];
+            int cards = ui.AskNumber($"How many cards does {target.Name} draw? (1-4)", 1, 4);
+
+            targets.Add((target, cards));
+            remaining.Remove(target);
+        }
+
+        return targets;
+    }
+
+    public override bool ShouldPlayPettyPlay(Game game, Player source, int drawCount)
+    {
+        int option = ui.AskNumber(
+            $"{Name}, {source.Name} makes you draw {drawCount} card(s) and you have a Wild Petty Play card. " +
+            $"Play it so {source.Name} draws 3 cards?\n1) Yes\n2) No", 1, 2);
+        return option == 1;
+    }
+
     private string DescribePlayers(IEnumerable<Player> players) =>
         string.Join("\n", players.Select((player, i) =>
             $"{i + 1}) {player.Name}{(player == this ? " (you)" : "")} ({player.Hand.Count} cards)"));
