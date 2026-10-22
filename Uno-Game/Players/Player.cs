@@ -1,4 +1,5 @@
 using Uno_Game.Cards;
+using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 
@@ -60,4 +61,13 @@ public abstract class Player
     /// Wild Petty Play. Returns true to play it out of turn so the source draws 3 cards.
     /// </summary>
     public abstract bool ShouldPlayPettyPlay(Game game, Player source, int drawCount);
+
+    /// <summary>
+    /// Defense pack: asked when a Draw or Skip penalty falls on this player and they hold defense cards
+    /// that can answer it. Returns one of <paramref name="options"/>, or null to take the penalty.
+    /// </summary>
+    public abstract DefenseCard? ChooseDefense(Game game, IReadOnlyList<DefenseCard> options, Player attacker, int drawCount, int turnsSkipped);
+
+    /// <summary>Defense pack, Wild Redirect: the player who receives the redirected penalty.</summary>
+    public abstract Player ChooseRedirectTarget(Game game, IReadOnlyList<Player> candidates);
 }

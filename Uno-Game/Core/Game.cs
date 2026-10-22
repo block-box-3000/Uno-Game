@@ -1,4 +1,5 @@
 using Uno_Game.Cards;
+using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.FrenemiesPack;
 using Uno_Game.Cards.ReversePack;
 using Uno_Game.Cards.StackPack;
@@ -31,6 +32,7 @@ public class Game
     private Player? trickOwner;     //Trick Wild Card: who played it...
     private Player? trickVictim;    //...and the player who must answer it
     private readonly Dictionary<Player, List<Player>> nemeses = new();   //Frenemies: owner of a Wild Nemesis -> their enemies
+    private readonly HashSet<Player> skippedPlayers = new();   //Defense: players who lose their next turn because a penalty was passed to them
     private Player? previousTurnPlayer;     //Who played the previous turn (to detect the start of a new round for a player)
     private Player? forcedNext;     //Who plays right after the current turn, overriding the normal order
 
@@ -101,6 +103,16 @@ public class Game
     public void PlayTurn()
     {
         Player player = CurrentPlayer;
+
+        //Defense pack: a skip penalty passed to this player makes them lose this turn
+        if (skippedPlayers.Remove(player))
+        {
+            ui.Show($"{player.Name} loses their turn", MessageStyle.Event);
+            ui.Pause(TurnDelayMs);
+            AdvanceTurn();
+            ui.Show("");
+            return;
+        }
 
         //Frenemies pack: a Wild Nemesis lasts until its owner ends it, asked at the start of each of their rounds
         bool startsRound = previousTurnPlayer != player;
@@ -243,7 +255,8 @@ public class Game
     }
 
     /// <summary>
-    /// The next player draws cards and/or skips turns. A player who would draw cards and holds a
+    /// The next player draws cards and/or skips turns. The victim may first answer with a Defense pack card
+    /// (<see cref="TryDefend"/>). A player who would draw cards and holds a
     /// Wild No U card may play it in response (<see cref="Player.ShouldPlayNoU"/>): the direction
     /// reverses, they choose the color and the punishment goes back to the player who played the card.
     /// </summary>
@@ -252,6 +265,10 @@ public class Game
         Player attacker = CurrentPlayer;
         Player victim = NextPlayer();
         Player source = attacker;   //Who makes the victim draw
+
+        //Defense pack: the victim may answer with a defense card before anything else
+        if (TryDefend(attacker, victim, drawCount, turnsSkipped))
+            return;
 
         //Wild No U only answers cards that make you draw
         WildNoUCard? noU = drawCount > 0
@@ -581,7 +598,7 @@ public class Game
     }
 
     private void ShowRevealedHands() =>
-        ui.ShowHands(players.Select(player => (player.Name, (IReadOnlyList<Card>)player.Hand.ToList())).ToList());
+        ui.ShowHands(players.Select(player => (player.Name, (IReadOnlyList<Card>) player.Hand.ToList())).ToList());
 
     // ---------------------------------------------------------------- Frenemies pack
 
@@ -743,6 +760,83 @@ public class Game
 
         DrawCards(victim, count + extra);
         return true;
+    }
+
+    // ---------------------------------------------------------------- Defense pack
+
+    /// <summary>
+    /// A Draw or Skip penalty falls on <paramref name="victim"/>, who may answer with a defense card
+    /// (<see cref="DefenseCard"/>). The card is played out of turn: it becomes the top card and the victim chooses the
+    /// color, but whose turn it is does not change, so play resumes from the current position (the victim, no longer
+    /// penalized, plays next in the normal order). A penalty passed on by a defense card is final (see
+    /// <see cref="PassPenalty"/>). Returns true if the penalty was dealt with.
+    /// </summary>
+    private bool TryDefend(Player attacker, Player victim, int drawCount, int turnsSkipped)
+    {
+        List<DefenseCard> options = victim.Hand
+            .OfType<DefenseCard>()
+            .Where(card => card.CanAnswer(drawCount))
+            .ToList();
+        if (options.Count == 0)
+            return false;
+
+        DefenseCard? defense = victim.ChooseDefense(this, options, attacker, drawCount, turnsSkipped);
+        if (defense == null)
+            return false;
+        if (!options.Contains(defense))
+            throw new InvalidOperationException($"{victim.Name} chose a defense card that can't answer this penalty: {defense}");
+
+        ui.Show($"{victim.Name} answers with {defense}!", MessageStyle.Event);
+        ui.Pause(ShortDelayMs);
+
+        //The victim plays the card, so they are the one who chooses the color (after PlayCard, which resets it)
+        int turnOwner = currentIndex;
+        currentIndex = victim.Index;
+        PlayCard(victim, defense, announce: false);
+        if (HasWon(victim))
+            return true;
+
+        ChooseColor();
+        currentIndex = turnOwner;
+
+        defense.Answer(this, victim, attacker, drawCount, turnsSkipped);
+        return true;
+    }
+
+    /// <summary>
+    /// A defense card moves a penalty from <paramref name="from"/> to <paramref name="to"/>: the new target draws the cards
+    /// and loses their next turn. It is final: no defense card and no Wild No U can answer a passed penalty.
+    /// </summary>
+    public void PassPenalty(Player from, Player to, int drawCount, int turnsSkipped)
+    {
+        ui.Show($"The penalty goes to {to.Name}", MessageStyle.Event);
+
+        if (drawCount > 0 && !ForceDraw(to, from, drawCount))
+            return;
+
+        if (turnsSkipped > 0)
+        {
+            skippedPlayers.Add(to);
+            ui.Show($"{to.Name} will lose their next turn", MessageStyle.Event);
+        }
+    }
+
+    public void BlockPenalty(Player victim) =>
+        ui.Show($"{victim.Name} blocks the penalty", MessageStyle.Event);
+
+    /// <summary>The next player after <paramref name="player"/> in the current order.</summary>
+    public Player PlayerAfter(Player player) => players[WrapIndex(player.Index + Direction)];
+
+    /// <summary>Wild Redirect: the victim picks any other player to receive the penalty.</summary>
+    public Player ChooseRedirectTarget(Player victim)
+    {
+        List<Player> candidates = players.Where(player => player != victim).ToList();
+        Player target = victim.ChooseRedirectTarget(this, candidates);
+
+        if (!candidates.Contains(target))
+            throw new InvalidOperationException($"{victim.Name} chose an invalid target.");
+
+        return target;
     }
 
     // ---------------------------------------------------------------- internals

@@ -1,4 +1,5 @@
 using Uno_Game.Cards;
+using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 
@@ -96,6 +97,22 @@ public class NpcPlayer : Player
 
     //The NPC always gets even
     public override bool ShouldPlayPettyPlay(Game game, Player source, int drawCount) => true;
+
+    //Defense pack: the NPC always defends, with the card that hurts the most (rebound, redirect, deflect, block)
+    public override DefenseCard? ChooseDefense(Game game, IReadOnlyList<DefenseCard> options, Player attacker, int drawCount, int turnsSkipped) =>
+        options
+            .OrderBy(card => card switch
+            {
+                WildBlockReboundCard => 0,
+                WildRedirectCard => 1,
+                WildBlockDeflectCard => 2,
+                _ => 3
+            })
+            .First();
+
+    //A redirected penalty goes to whoever is closest to winning
+    public override Player ChooseRedirectTarget(Game game, IReadOnlyList<Player> candidates) =>
+        candidates.OrderBy(player => player.Hand.Count).First();
 
     private Player ClosestToWinning(Game game) =>
         game.Players.Where(player => player != this).OrderBy(player => player.Hand.Count).First();

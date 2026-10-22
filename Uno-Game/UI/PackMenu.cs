@@ -13,6 +13,7 @@ public static class PackMenu
         ("Speed pack", ExpansionPacks.Speed),
         ("Billie Eilish pack", ExpansionPacks.Billie),
         ("Frenemies pack", ExpansionPacks.Frenemies),
+        ("Defense pack", ExpansionPacks.Defense),
     };
 
     public static ExpansionPacks Select(IGameUi ui)

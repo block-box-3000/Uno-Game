@@ -1,4 +1,5 @@
 using Uno_Game.Cards;
+using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 using Uno_Game.UI;
@@ -143,6 +144,21 @@ public class HumanPlayer : Player
             $"Play it so {source.Name} draws 3 cards?\n1) Yes\n2) No", 1, 2);
         return option == 1;
     }
+
+    public override DefenseCard? ChooseDefense(Game game, IReadOnlyList<DefenseCard> options, Player attacker, int drawCount, int turnsSkipped)
+    {
+        string penalty = drawCount > 0 ? $"a draw {drawCount} penalty" : "a skip penalty";
+        string choices = string.Join("\n", options.Select((card, i) => $"{i + 1}) {card}"));
+
+        int option = ui.AskNumber(
+            $"{Name}, {attacker.Name} plays {penalty} on you. Defend yourself?\n0) Take the penalty\n{choices}",
+            0, options.Count);
+
+        return option == 0 ? null : options[option - 1];
+    }
+
+    public override Player ChooseRedirectTarget(Game game, IReadOnlyList<Player> candidates) =>
+        ChoosePlayer(candidates, "Wild Redirect: choose the player who gets the penalty");
 
     private string DescribePlayers(IEnumerable<Player> players) =>
         string.Join("\n", players.Select((player, i) =>

@@ -2,6 +2,7 @@ using Uno_Game.Cards;
 using Uno_Game.Cards.BilliePack;
 using Uno_Game.Cards.FrenemiesPack;
 using Uno_Game.Cards.ReversePack;
+using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.SpeedPack;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Cards.SwapPack;
@@ -209,6 +210,18 @@ public class Deck
                 yield return new WildNemesisCard();
                 yield return new WildEliminatorCard();
                 yield return new WildInstigatorCard();
+            }
+        }
+
+        if (packs.HasFlag(ExpansionPacks.Defense))
+        {
+            //All the cards of the pack are wild
+            for (int i = 0; i < 4; i++)
+            {
+                yield return new WildBlockCard();
+                yield return new WildBlockReboundCard();
+                yield return new WildBlockDeflectCard();
+                yield return new WildRedirectCard();
             }
         }
     }
