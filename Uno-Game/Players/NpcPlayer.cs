@@ -114,6 +114,15 @@ public class NpcPlayer : Player
     public override Player ChooseRedirectTarget(Game game, IReadOnlyList<Player> candidates) =>
         candidates.OrderBy(player => player.Hand.Count).First();
 
+    //Comeback pack: swap with the smallest hand and make the leader catch up
+    public override Player ChooseSwapHandsTarget(Game game) => ClosestToWinning(game);
+
+    public override Player ChooseMatchTarget(Game game) => ClosestToWinning(game);
+
+    //U-N-O rule: always use it, keeping a wild card so the win is guaranteed (a wild card can always be played)
+    public override Card? ChooseUnoKeep(Game game, IReadOnlyList<Card> candidates) =>
+        candidates.FirstOrDefault(card => card.IsWild) ?? candidates.OrderBy(card => card.Points).First();
+
     private Player ClosestToWinning(Game game) =>
         game.Players.Where(player => player != this).OrderBy(player => player.Hand.Count).First();
 

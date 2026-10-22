@@ -23,6 +23,9 @@ public abstract class Card
     /// </summary>
     public virtual bool SharesSymbolWith(Card other) => GetType() == other.GetType();
 
+    /// <summary>Comeback pack: the letter (U, N or O) printed in the corner of the card, for the U-N-O rule.</summary>
+    public virtual char? UnoLetter => null;
+
     /// <summary>Speed pack: how many speed levels this card adds when played (its "Speed Up" icons).</summary>
     public virtual int SpeedUp => 0;
 

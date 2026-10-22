@@ -70,4 +70,17 @@ public abstract class Player
 
     /// <summary>Defense pack, Wild Redirect: the player who receives the redirected penalty.</summary>
     public abstract Player ChooseRedirectTarget(Game game, IReadOnlyList<Player> candidates);
+
+    /// <summary>Comeback pack, Wild Swap Hands: the other player this player swaps hands with.</summary>
+    public abstract Player ChooseSwapHandsTarget(Game game);
+
+    /// <summary>Comeback pack, Wild Match the Max: the player who draws up to the largest hand.</summary>
+    public abstract Player ChooseMatchTarget(Game game);
+
+    /// <summary>
+    /// Comeback pack, U-N-O rule: asked at the start of the turn when this player holds a U, an N and an O card
+    /// (and at least one more card). Returns the card to keep among <paramref name="candidates"/> to discard down to
+    /// one card, or null to play normally.
+    /// </summary>
+    public abstract Card? ChooseUnoKeep(Game game, IReadOnlyList<Card> candidates);
 }

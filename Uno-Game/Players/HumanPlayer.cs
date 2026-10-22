@@ -160,6 +160,24 @@ public class HumanPlayer : Player
     public override Player ChooseRedirectTarget(Game game, IReadOnlyList<Player> candidates) =>
         ChoosePlayer(candidates, "Wild Redirect: choose the player who gets the penalty");
 
+    public override Player ChooseSwapHandsTarget(Game game) =>
+        ChoosePlayer(game.Players.Where(player => player != this).ToList(), "Wild Swap Hands: choose the player you swap hands with");
+
+    public override Player ChooseMatchTarget(Game game) =>
+        ChoosePlayer(game.Players.Where(player => player != this).ToList(), "Wild Match the Max: choose the player who draws up to the largest hand");
+
+    public override Card? ChooseUnoKeep(Game game, IReadOnlyList<Card> candidates)
+    {
+        string cards = string.Join("\n", candidates.Select((card, i) => $"{i + 1}) Keep {card}"));
+
+        int option = ui.AskNumber(
+            $"{Name}, you have U-N-O! You can discard down to one card for an instant UNO. Which card do you keep?\n" +
+            $"0) Don't use the U-N-O rule\n{cards}",
+            0, candidates.Count);
+
+        return option == 0 ? null : candidates[option - 1];
+    }
+
     private string DescribePlayers(IEnumerable<Player> players) =>
         string.Join("\n", players.Select((player, i) =>
             $"{i + 1}) {player.Name}{(player == this ? " (you)" : "")} ({player.Hand.Count} cards)"));

@@ -14,6 +14,7 @@ public static class PackMenu
         ("Billie Eilish pack", ExpansionPacks.Billie),
         ("Frenemies pack", ExpansionPacks.Frenemies),
         ("Defense pack", ExpansionPacks.Defense),
+        ("Comeback pack", ExpansionPacks.Comeback),
     };
 
     public static ExpansionPacks Select(IGameUi ui)
