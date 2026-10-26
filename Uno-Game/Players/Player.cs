@@ -83,4 +83,11 @@ public abstract class Player
     /// one card, or null to play normally.
     /// </summary>
     public abstract Card? ChooseUnoKeep(Game game, IReadOnlyList<Card> candidates);
+
+    /// <summary>
+    /// Uno Flip: asked when <paramref name="attacker"/> plays a Wild Draw 2 / Wild Draw Color on this player.
+    /// Returns true to challenge it (the attacker shows their hand: if they held a card of the color in play they
+    /// take the penalty, otherwise this player takes it plus 2 more cards).
+    /// </summary>
+    public abstract bool ShouldChallenge(Game game, Player attacker, string cardName);
 }

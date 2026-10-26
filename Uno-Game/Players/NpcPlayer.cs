@@ -25,7 +25,7 @@ public class NpcPlayer : Player
         Card? best = null;
         foreach (Card card in playableCards)
         {
-            if (nextPlayerIsAboutToWin && card is SkipCard)
+            if (nextPlayerIsAboutToWin && card.Face is SkipCard)
                 return card;
 
             if (best == null || card.Points < best.Points)
@@ -38,15 +38,17 @@ public class NpcPlayer : Player
     public override CardColor ChooseColor(Game game)
     {
         //Pick the color the NPC has the most in its hand
-        Dictionary<CardColor, int> count = CardColors.Playable.ToDictionary(color => color, _ => 0);
+        //The colors depend on the side in play (Uno Flip)
+        IReadOnlyList<CardColor> colors = game.PlayableColors;
+        Dictionary<CardColor, int> count = colors.ToDictionary(color => color, _ => 0);
         foreach (Card card in Hand)
         {
             if (!card.IsWild)
                 count[card.Color]++;
         }
 
-        CardColor best = CardColors.Playable[0];
-        foreach (CardColor color in CardColors.Playable)
+        CardColor best = colors[0];
+        foreach (CardColor color in colors)
         {
             if (count[color] > count[best])
                 best = color;
@@ -54,7 +56,7 @@ public class NpcPlayer : Player
 
         //In case the NPC doesn't have any color in its hand
         if (count[best] == 0)
-            best = CardColors.Playable[rng.Next(CardColors.Playable.Length)];
+            best = colors[rng.Next(colors.Count)];
 
         return best;
     }
@@ -122,6 +124,9 @@ public class NpcPlayer : Player
     //U-N-O rule: always use it, keeping a wild card so the win is guaranteed (a wild card can always be played)
     public override Card? ChooseUnoKeep(Game game, IReadOnlyList<Card> candidates) =>
         candidates.FirstOrDefault(card => card.IsWild) ?? candidates.OrderBy(card => card.Points).First();
+
+    //Uno Flip: the NPC doesn't know if a Wild Draw was played legally, so it challenges 3 times out of 10
+    public override bool ShouldChallenge(Game game, Player attacker, string cardName) => rng.Next(1, 11) <= 3;
 
     private Player ClosestToWinning(Game game) =>
         game.Players.Where(player => player != this).OrderBy(player => player.Hand.Count).First();

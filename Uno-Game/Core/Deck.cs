@@ -2,6 +2,7 @@ using Uno_Game.Cards;
 using Uno_Game.Cards.BilliePack;
 using Uno_Game.Cards.ComebackPack;
 using Uno_Game.Cards.DefensePack;
+using Uno_Game.Cards.FlipVersion;
 using Uno_Game.Cards.FrenemiesPack;
 using Uno_Game.Cards.ReversePack;
 using Uno_Game.Cards.SpeedPack;
@@ -21,17 +22,26 @@ public class Deck
     private readonly ExpansionPacks packs;
     private readonly Random rng;
 
+    /// <summary>Uno Flip: which side of the cards is up (null in the normal version).</summary>
+    public SideIndicator? Side { get; }
+
     public int DrawPileCount => drawPile.Count;
     public int DiscardPileCount => discardPile.Count;
 
-    public Deck(ExpansionPacks packs, Random? rng = null)
+    public Deck(ExpansionPacks packs, Random? rng = null, GameVersions version = GameVersions.Normal)
     {
         this.packs = packs;
         this.rng = rng ?? Random.Shared;
 
-        drawPile = CreateCards(packs).ToList();
+        if (version == GameVersions.Flip)
+            Side = new SideIndicator();
+
+        drawPile = NewCards().ToList();
         Shuffle(drawPile);
     }
+
+    //A full set of cards for this version of the game
+    private IEnumerable<Card> NewCards() => Side != null ? FlipDeck.CreateCards(Side, rng) : CreateCards(packs);
 
     public Card Draw()
     {
@@ -45,10 +55,24 @@ public class Deck
 
     public void Discard(Card card) => discardPile.Add(card);
 
+    /// <summary>
+    /// Uno Flip: the whole discard pile is turned over. The card on top (the Flip card that was just played)
+    /// goes to the bottom, and the card that was at the bottom becomes the new top card, which is returned.
+    /// </summary>
+    public Card FlipDiscardPile(Card top)
+    {
+        discardPile.Add(top);
+        discardPile.Reverse();
+
+        Card newTop = discardPile[^1];
+        discardPile.RemoveAt(discardPile.Count - 1);
+        return newTop;
+    }
+
     /// <summary>The first card of the game is always a number card.</summary>
     public Card TakeStartingCard()
     {
-        int index = drawPile.FindIndex(card => card is NumberCard);
+        int index = drawPile.FindIndex(card => card.Face is NumberCard);
         if (index < 0)
             throw new InvalidOperationException("The deck has no number cards.");
 
@@ -71,7 +95,7 @@ public class Deck
             Card card = Draw();
             flipped.Add(card);
 
-            if (card is NumberCard numberCard)
+            if (card.Face is NumberCard numberCard)
             {
                 foreach (Card flippedCard in flipped)
                     Discard(flippedCard);
@@ -88,7 +112,7 @@ public class Deck
 
         //Rare case: every card is in the players' hands
         if (drawPile.Count == 0)
-            drawPile.AddRange(CreateCards(packs));
+            drawPile.AddRange(NewCards());
 
         Shuffle(drawPile);
     }

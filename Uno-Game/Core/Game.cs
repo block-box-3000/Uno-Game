@@ -12,7 +12,7 @@ namespace Uno_Game.Core;
 /// All the state of one match (players, deck, direction, whose turn it is) and the
 /// operations cards use to change it. Cards call these methods from <see cref="Card.Apply"/>.
 /// </summary>
-public class Game
+public partial class Game
 {
     public const int InitialHandSize = 7;
     private const int TurnDelayMs = 2000;
@@ -58,7 +58,11 @@ public class Game
     public Player CurrentPlayer => players[currentIndex];
     public Player? Winner { get; private set; }
 
-    public Game(IEnumerable<Player> players, Deck deck, ExpansionPacks packs, IGameUi ui, Random? rng = null)
+    /// <summary>The version of the game: normal Uno (with expansion packs) or Uno Flip.</summary>
+    public GameVersions Version { get; }
+
+    public Game(IEnumerable<Player> players, Deck deck, ExpansionPacks packs, IGameUi ui, Random? rng = null,
+        GameVersions version = GameVersions.Normal)
     {
         this.players = players.ToList();
         if (this.players.Count < 2)
@@ -71,6 +75,7 @@ public class Game
 
         Deck = deck;
         Packs = packs;
+        Version = version;
         this.ui = ui;
         this.rng = rng ?? Random.Shared;
 
@@ -82,13 +87,18 @@ public class Game
     }
 
     /// <summary>Player 1 is the human, everyone else is an NPC.</summary>
-    public static Game CreateStandard(ExpansionPacks packs, IGameUi ui, int playerCount = 4, Random? rng = null)
+    public static Game CreateStandard(ExpansionPacks packs, IGameUi ui, int playerCount = 4, Random? rng = null,
+        GameVersions version = GameVersions.Normal)
     {
+        //Uno Flip has no expansion packs
+        if (version == GameVersions.Flip)
+            packs = ExpansionPacks.None;
+
         var players = new List<Player> { new HumanPlayer(0, ui) };
         for (int i = 1; i < playerCount; i++)
             players.Add(new NpcPlayer(i, rng));
 
-        return new Game(players, new Deck(packs, rng), packs, ui, rng);
+        return new Game(players, new Deck(packs, rng, version), packs, ui, rng, version);
     }
 
     // ---------------------------------------------------------------- game loop
@@ -165,9 +175,15 @@ public class Game
         int played = 0;
         Card? lastPlayed = null;
 
+        //Uno Flip: the human always sees which side is up
+        if (Version == GameVersions.Flip && player.IsHuman)
+            ui.Show($"--- {CurrentSide} side ---", MessageStyle.Event);
+
         while (played < required)
         {
-            List<Card> playable = player.Hand.Where(IsPlayable).ToList();
+            List<Card> playable = player.Hand
+                .Where(card => IsPlayable(card) && (player.IsHuman || !IsIllegalWildDraw(player, card)))
+                .ToList();
             if (playable.Count == 0)
                 break;
 
@@ -1030,6 +1046,9 @@ public class Game
 
     private void PlayCard(Player player, Card card, bool announce)
     {
+        //Uno Flip: a Wild Draw card is only legal without a card of the color in play (see ResolveWildDraw)
+        matchedColorInHand = player.Hand.Any(other => other != card && other.Color == CurrentColor);
+
         player.Hand.Remove(card);
         Deck.Discard(TopCard);
         TopCard = card;
@@ -1079,6 +1098,9 @@ public class Game
     {
         Winner = player;
         ui.Show($"\n{player.Name} wins!", MessageStyle.Success);
+
+        /*if (Version == GameVersions.Flip)
+            ShowRoundScore(player);*/
     }
 
     private void AdvanceTurn()

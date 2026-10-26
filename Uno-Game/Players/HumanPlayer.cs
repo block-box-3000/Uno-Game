@@ -35,8 +35,12 @@ public class HumanPlayer : Player
 
     public override CardColor ChooseColor(Game game)
     {
-        int option = ui.AskNumber("Select a color:\n1) Red\n2) Yellow\n3) Blue\n4) Green", 1, 4);
-        return CardColors.Playable[option - 1];
+        //The colors depend on the side in play (Uno Flip)
+        IReadOnlyList<CardColor> colors = game.PlayableColors;
+        string options = string.Join("\n", colors.Select((color, i) => $"{i + 1}) {color}"));
+
+        int option = ui.AskNumber($"Select a color:\n{options}", 1, colors.Count);
+        return colors[option - 1];
     }
 
     public override bool ShouldPlayNoU(Game game, int drawCount)
@@ -176,6 +180,13 @@ public class HumanPlayer : Player
             0, candidates.Count);
 
         return option == 0 ? null : candidates[option - 1];
+    }
+
+    public override bool ShouldChallenge(Game game, Player attacker, string cardName)
+    {
+        int option = ui.AskNumber(
+            $"{Name}, {attacker.Name} plays {cardName} on you. Challenge it?\n1) Yes, challenge\n2) No, take the penalty", 1, 2);
+        return option == 1;
     }
 
     private string DescribePlayers(IEnumerable<Player> players) =>

@@ -4,7 +4,7 @@ namespace Uno_Game.Cards;
 
 public class WildCard : Card
 {
-    public WildCard() : base(CardColor.Wild, points: 50)
+    public WildCard(int points = 50) : base(CardColor.Wild, points)
     {
     }
 

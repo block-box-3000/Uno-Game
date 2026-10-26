@@ -82,6 +82,10 @@ public class ConsoleUi : IGameUi
         CardColor.Yellow => ConsoleColor.Yellow,
         CardColor.Blue => ConsoleColor.Blue,
         CardColor.Green => ConsoleColor.Green,
+        CardColor.Pink => ConsoleColor.Magenta,
+        CardColor.Teal => ConsoleColor.Cyan,
+        CardColor.Orange => ConsoleColor.DarkYellow,
+        CardColor.Purple => ConsoleColor.DarkMagenta,
         _ => ConsoleColor.White
     };
 

@@ -4,8 +4,9 @@ namespace Uno_Game.Cards;
 
 public abstract class Card
 {
-    public CardColor Color { get; }
-    public int Points { get; }
+    //Virtual so a double-sided card (Uno Flip) can answer with the face that is up
+    public virtual CardColor Color { get; }
+    public virtual int Points { get; }
     public bool IsWild => Color == CardColor.Wild;
 
     protected Card(CardColor color, int points)
@@ -13,6 +14,9 @@ public abstract class Card
         Color = color;
         Points = points;
     }
+
+    /// <summary>The card itself, or for a double-sided card (Uno Flip) the face that is up.</summary>
+    public virtual Card Face => this;
 
     /// <summary>Card name without its color, e.g. "skip" or "5".</summary>
     protected abstract string Name { get; }
