@@ -13,6 +13,9 @@ namespace Uno_Game.Core
     // ---------------------------------------------------------------- Frenemies pack
     public partial class Game
     {
+        private const int PettyPlayCards = 3;      //Cards drawn because of a Wild Petty Play
+        private const int NemesisExtraCards = 2;   //Extra cards drawn by the enemy of a Wild Nemesis
+
         /// <summary>Wild Petty Play played on your turn: the chosen player draws 3 cards.</summary>
         public void PettyPlay()
         {

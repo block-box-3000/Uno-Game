@@ -12,6 +12,9 @@ namespace Uno_Game.Core
     // ---------------------------------------------------------------- Comeback pack
     public partial class Game
     {
+        private bool colorChosen;
+        private bool colorLocked;   //Comeback: the card played on top of a Double Down doesn't change the color
+
         /// <summary>Wild Swap Hands: the current player swaps hands with any other player.</summary>
         public void SwapHands()
         {

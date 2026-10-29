@@ -17,16 +17,12 @@ public partial class Game
     public const int InitialHandSize = 7;
     private const int TurnDelayMs = 2000;
     private const int ShortDelayMs = 1500;
-    private const int PettyPlayCards = 3;      //Cards drawn because of a Wild Petty Play
-    private const int NemesisExtraCards = 2;   //Extra cards drawn by the enemy of a Wild Nemesis
 
     private readonly IGameUi ui;
     private readonly Random rng;
     private readonly List<Player> players;
     private int currentIndex;
     private bool repeatTurn;
-    private bool colorChosen;
-    private bool colorLocked;   //Comeback: the card played on top of a Double Down doesn't change the color
 
     public IReadOnlyList<Player> Players => players;
     public Deck Deck { get; }
