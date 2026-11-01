@@ -2,6 +2,7 @@ using Uno_Game.Cards;
 using Uno_Game.Cards.BilliePack;
 using Uno_Game.Cards.ComebackPack;
 using Uno_Game.Cards.DefensePack;
+using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
 using Uno_Game.Cards.FrenemiesPack;
 using Uno_Game.Cards.ReversePack;
@@ -21,6 +22,7 @@ public class Deck
     private readonly List<Card> discardPile = new();
     private readonly ExpansionPacks packs;
     private readonly Random rng;
+    private readonly GameVersions version;
 
     /// <summary>Uno Flip: which side of the cards is up (null in the normal version).</summary>
     public SideIndicator? Side { get; }
@@ -32,6 +34,7 @@ public class Deck
     {
         this.packs = packs;
         this.rng = rng ?? Random.Shared;
+        this.version = version;
 
         if (version == GameVersions.Flip)
             Side = new SideIndicator();
@@ -41,7 +44,10 @@ public class Deck
     }
 
     //A full set of cards for this version of the game
-    private IEnumerable<Card> NewCards() => Side != null ? FlipDeck.CreateCards(Side, rng) : CreateCards(packs);
+    private IEnumerable<Card> NewCards() =>
+        Side != null ? FlipDeck.CreateCards(Side, rng)
+        : version == GameVersions.Flex ? FlexDeck.CreateCards()
+        : CreateCards(packs);
 
     public Card Draw()
     {

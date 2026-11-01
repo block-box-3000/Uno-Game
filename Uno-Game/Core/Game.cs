@@ -1,5 +1,6 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.DefensePack;
+using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FrenemiesPack;
 using Uno_Game.Cards.ReversePack;
 using Uno_Game.Cards.StackPack;
@@ -71,8 +72,8 @@ public partial class Game
     public static Game CreateStandard(ExpansionPacks packs, IGameUi ui, int playerCount = 4, Random? rng = null,
         GameVersions version = GameVersions.Normal)
     {
-        //Uno Flip has no expansion packs
-        if (version == GameVersions.Flip)
+        //Uno Flip and Uno Flex have no expansion packs
+        if (version != GameVersions.Normal)
             packs = ExpansionPacks.None;
 
         var players = new List<Player> { new HumanPlayer(0, ui) };
@@ -160,6 +161,10 @@ public partial class Game
         if (Version == GameVersions.Flip && player.IsHuman)
             ui.Show($"--- {CurrentSide} side ---", MessageStyle.Event);
 
+        //Uno Flex: the human always sees their Power Card
+        if (Version == GameVersions.Flex && player.IsHuman)
+            ui.Show($"--- Power Card: {(HasPower(player) ? "ON (green)" : "OFF (red)")} ---", MessageStyle.Event);
+
         while (played < required)
         {
             List<Card> playable = player.Hand
@@ -174,6 +179,10 @@ public partial class Game
             Card card = player.ChooseCard(this, playable);
             if (!playable.Contains(card))
                 throw new InvalidOperationException($"{player.Name} chose a card that can't be played: {card}");
+
+            //Uno Flex: choose which side of a flex card is played (the flex side costs the Power Card)
+            if (Version == GameVersions.Flex && card is FlexCard flexCard)
+                ChooseFlexSide(player, flexCard);
 
             PlayCard(player, card, announce: true);
             played++;
@@ -224,7 +233,8 @@ public partial class Game
     }
 
     public bool IsPlayable(Card card) =>
-        card.IsWild || card.Color == CurrentColor || (!TopCard.IsWild && card.SharesSymbolWith(TopCard));
+        card.IsWild || card.Color == CurrentColor || (!TopCard.IsWild && card.SharesSymbolWith(TopCard))
+        || CanMatchWithFlexColor(card);
 
     public Player NextPlayer() => players[WrapIndex(currentIndex + Direction)];
 
@@ -337,7 +347,7 @@ public partial class Game
     private void PlayCard(Player player, Card card, bool announce)
     {
         //Uno Flip: a Wild Draw card is only legal without a card of the color in play (see ResolveWildDraw)
-        matchedColorInHand = player.Hand.Any(other => other != card && other.Color == CurrentColor);
+        matchedColorInHand = player.Hand.Any(other => other != card && MatchesColorInPlay(other));
 
         player.Hand.Remove(card);
         Deck.Discard(TopCard);
@@ -351,6 +361,10 @@ public partial class Game
         //Every Speed Up icon counts as soon as the card is played, even in the middle of a turn
         if (card.SpeedUp > 0)
             IncreaseSpeed(card.SpeedUp);
+
+        //Uno Flex: a number card with the Flip symbol flips the Power Card of whoever plays it
+        if (card.FlipsPowerCard)
+            TogglePower(player);
     }
 
     /// <summary>Says UNO! when one card is left. Returns true if the player just won.</summary>

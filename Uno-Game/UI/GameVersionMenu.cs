@@ -13,6 +13,7 @@ namespace Uno_Game.UI
         {
             ("Uno", GameVersions.Normal),
             ("Uno Flip!", GameVersions.Flip),
+            ("Uno Flex!", GameVersions.Flex),
         };
 
         public static GameVersions Select(IGameUi ui)

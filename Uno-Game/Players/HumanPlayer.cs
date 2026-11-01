@@ -1,5 +1,6 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.DefensePack;
+using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 using Uno_Game.UI;
@@ -188,6 +189,17 @@ public class HumanPlayer : Player
             $"{Name}, {attacker.Name} plays {cardName} on you. Challenge it?\n1) Yes, challenge\n2) No, take the penalty", 1, 2);
         return option == 1;
     }
+
+    public override bool ShouldUseFlexSide(Game game, FlexCard card)
+    {
+        int option = ui.AskNumber(
+            $"{Name}, you can play either side of this card (the flex side flips your Power Card to red):\n" +
+            $"1) Regular side: {card.Regular}\n2) Flex side: {card.FlexDescription}", 1, 2);
+        return option == 2;
+    }
+
+    public override Player ChooseFlexTarget(Game game, int cards) =>
+        ChoosePlayer(game.Players.Where(player => player != this).ToList(), $"Choose the player who draws {cards} cards");
 
     private string DescribePlayers(IEnumerable<Player> players) =>
         string.Join("\n", players.Select((player, i) =>

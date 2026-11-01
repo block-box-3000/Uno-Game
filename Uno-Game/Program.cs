@@ -1,6 +1,4 @@
-using Uno_Game.Cards.FlipVersion;
 using Uno_Game.Core;
-using Uno_Game.Players;
 using Uno_Game.UI;
 
 var ui = new ConsoleUi();

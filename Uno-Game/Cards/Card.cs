@@ -30,6 +30,9 @@ public abstract class Card
     /// <summary>Comeback pack: the letter (U, N or O) printed in the corner of the card, for the U-N-O rule.</summary>
     public virtual char? UnoLetter => null;
 
+    /// <summary>Uno Flex: true for the number cards with the Flip symbol (whoever plays one flips their Power Card).</summary>
+    public virtual bool FlipsPowerCard => false;
+
     /// <summary>Speed pack: how many speed levels this card adds when played (its "Speed Up" icons).</summary>
     public virtual int SpeedUp => 0;
 

@@ -1,4 +1,5 @@
 using Uno_Game.Cards;
+using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
 using Uno_Game.Players;
 using Uno_Game.UI;
@@ -124,10 +125,23 @@ public partial class Game
             DrawCards(player, extraCards);
     }
 
-    //Wild Draw cards can be played without a card of the color in play (see ResolveWildDraw), so the NPC never bluffs
-    private bool IsIllegalWildDraw(Player player, Card card) =>
-        card.Face is WildDrawTwoCard or WildDrawColorCard
-        && player.Hand.Any(other => other != card && other.Color == CurrentColor);
+    //Wild Draw cards can be played without a card of the color in play (see ResolveWildDraw), so the NPC never bluffs.
+    //In Uno Flex the Wild Draw 4 has no restriction on its flex side (the NPC uses it whenever its Power Card is on),
+    //and any Wild card in the hand counts as a match for the color in play.
+    private bool IsIllegalWildDraw(Player player, Card card)
+    {
+        if (card.Face is not (WildDrawTwoCard or WildDrawColorCard or WildDrawFourCard))
+            return false;
+
+        if (card is FlexCard && HasPower(player))
+            return false;
+
+        return player.Hand.Any(other => other != card && MatchesColorInPlay(other));
+    }
+
+    //Does this card count as a card of the color in play? (In Uno Flex wild cards count too.)
+    private bool MatchesColorInPlay(Card card) =>
+        card.Color == CurrentColor || (Version == GameVersions.Flex && card.IsWild);
 
     //In Uno Flip the winner of the round scores the cards left in the other hands, valued by the side that is up
     private void ShowRoundScore(Player winner)

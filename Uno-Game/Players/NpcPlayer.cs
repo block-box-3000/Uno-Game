@@ -1,5 +1,6 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.DefensePack;
+using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 
@@ -127,6 +128,11 @@ public class NpcPlayer : Player
 
     //Uno Flip: the NPC doesn't know if a Wild Draw was played legally, so it challenges 3 times out of 10
     public override bool ShouldChallenge(Game game, Player attacker, string cardName) => rng.Next(1, 11) <= 3;
+
+    //Uno Flex: the NPC always plays the flex side when it can, and targets whoever is closest to winning
+    public override bool ShouldUseFlexSide(Game game, FlexCard card) => true;
+
+    public override Player ChooseFlexTarget(Game game, int cards) => ClosestToWinning(game);
 
     private Player ClosestToWinning(Game game) =>
         game.Players.Where(player => player != this).OrderBy(player => player.Hand.Count).First();

@@ -1,5 +1,6 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.DefensePack;
+using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 
@@ -90,4 +91,13 @@ public abstract class Player
     /// take the penalty, otherwise this player takes it plus 2 more cards).
     /// </summary>
     public abstract bool ShouldChallenge(Game game, Player attacker, string cardName);
+
+    /// <summary>
+    /// Uno Flex: asked when this player can play either side of an action or wild flex card (their Power Card is on).
+    /// Returns true to play the flex side, which flips the Power Card to red.
+    /// </summary>
+    public abstract bool ShouldUseFlexSide(Game game, FlexCard card);
+
+    /// <summary>Uno Flex: the other player who draws <paramref name="cards"/> cards (flex side of the Wild Flex Draw 2 and Draw 4).</summary>
+    public abstract Player ChooseFlexTarget(Game game, int cards);
 }
