@@ -1,6 +1,7 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.FlexVersion;
+using Uno_Game.Cards.FlipVersion;
 using Uno_Game.Cards.FrenemiesPack;
 using Uno_Game.Cards.ReversePack;
 using Uno_Game.Cards.StackPack;
@@ -18,12 +19,17 @@ public partial class Game
     public const int InitialHandSize = 7;
     private const int TurnDelayMs = 2000;
     private const int ShortDelayMs = 1500;
+    private const int FailedChallengeExtraCards = 2;
 
     private readonly IGameUi ui;
     private readonly Random rng;
     private readonly List<Player> players;
     private int currentIndex;
     private bool repeatTurn;
+
+    //Did the player who just played a card hold another card of the color that was in play?
+    //It decides if a Wild Draw / Wild Draw Color was played legally. Set in PlayCard.
+    private bool matchedColorInHand;
 
     public IReadOnlyList<Player> Players => players;
     public Deck Deck { get; }
@@ -320,6 +326,88 @@ public partial class Game
 
         ApplyPunishment(victim, source, drawCount, turnsSkipped);
     }
+
+    /// <summary>Wild Draw Cards: the next player draws n cards and misses their turn (unless challenged).</summary>
+    public void WildDrawCards(int drawCount) =>
+        ResolveWildDraw($"Wild Draw {drawCount}", player =>
+        {
+            ui.Show($"{player.Name} draws {drawCount} card(s)", MessageStyle.Event);
+            DrawCards(player, drawCount);
+        });
+
+    /// <summary>Checks for a challenge before starting a Wild Draw stack. Returns true if challenged.</summary>
+    public bool ChallengeWildDrawBeforeStack(int drawCount) =>
+        TryChallengeWildDraw($"Wild Draw {drawCount}", player =>
+        {
+            ui.Show($"{player.Name} draws {drawCount} card(s)", MessageStyle.Event);
+            DrawCards(player, drawCount);
+        });
+
+    /// <summary>
+    /// The next player may challenge a Wild Draw card. The challenged player shows their hand:
+    /// - If they held a card of the color that was in play, the play was illegal: they take the penalty instead
+    ///   and the challenger plays normally.
+    /// - If not, the challenger takes the penalty plus 2 more cards and misses their turn.
+    /// Without a challenge the next player takes the penalty and misses their turn.
+    /// </summary>
+    private void ResolveWildDraw(string cardName, Action<Player> penalty)
+    {
+        if (TryChallengeWildDraw(cardName, penalty))
+            return;
+
+        Player victim = NextPlayer();
+        penalty(victim);
+        SkipFrom(victim, 1);
+    }
+
+    private bool TryChallengeWildDraw(string cardName, Action<Player> penalty)
+    {
+        Player attacker = CurrentPlayer;
+        Player victim = NextPlayer();
+        bool illegalPlay = matchedColorInHand;
+
+        if (victim.ShouldChallenge(this, attacker, cardName))
+        {
+            ui.Show($"{victim.Name} challenges {attacker.Name}! {attacker.Name} shows their hand:", MessageStyle.Event);
+            ui.ShowHands(new List<(string PlayerName, IReadOnlyList<Card> Cards)> { (attacker.Name, attacker.Hand.ToList()) });
+            ui.Pause(ShortDelayMs);
+
+            if (illegalPlay)
+            {
+                ui.Show($"{attacker.Name} had a card of the color in play: they take the penalty instead of {victim.Name}", MessageStyle.Event);
+                penalty(attacker);
+                return true;
+            }
+
+            ui.Show($"{attacker.Name} played it legally: {victim.Name} takes the penalty plus {FailedChallengeExtraCards} more cards", MessageStyle.Event);
+            penalty(victim);
+            DrawCards(victim, FailedChallengeExtraCards);
+            SkipFrom(victim, 1);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///Wild Draw cards can be played without a card of the color in play (see ResolveWildDraw), so the NPC never bluffs.
+    ///In Uno Flex the Wild Draw 4 has no restriction on its flex side (the NPC uses it whenever its Power Card is on),
+    ///and any Wild card in the hand counts as a match for the color in play.
+    /// </summary>
+    private bool IsIllegalWildDraw(Player player, Card card)
+    {
+        if (card.Face is not (WildDrawCard or WildDrawColorCard))
+            return false;
+
+        if (card is FlexCard && HasPower(player))
+            return false;
+
+        return player.Hand.Any(other => other != card && MatchesColorInPlay(other));
+    }
+
+    //Does this card count as a card of the color in play? (In Uno Flex wild cards count too.)
+    private bool MatchesColorInPlay(Card card) =>
+        card.Color == CurrentColor || (Version == GameVersions.Flex && card.IsWild);
 
     // ---------------------------------------------------------------- internals
 

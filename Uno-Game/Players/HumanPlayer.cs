@@ -186,7 +186,8 @@ public class HumanPlayer : Player
     public override bool ShouldChallenge(Game game, Player attacker, string cardName)
     {
         int option = ui.AskNumber(
-            $"{Name}, {attacker.Name} plays {cardName} on you. Challenge it?\n1) Yes, challenge\n2) No, take the penalty", 1, 2);
+            $"{Name}, {attacker.Name} plays {cardName} on you. Challenge it? (" +
+            $"{attacker.Hand.Count} card(s) left)\n1) Yes, challenge\n2) No, take the penalty", 1, 2);
         return option == 1;
     }
 
