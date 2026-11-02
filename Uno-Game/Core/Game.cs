@@ -390,7 +390,7 @@ public partial class Game
     }
 
     /// <summary>
-    ///Wild Draw cards can be played without a card of the color in play (see ResolveWildDraw), so the NPC never bluffs.
+    ///Wild Draw cards can be played without a card of the color in play (see ResolveWildDraw), but sometimes NPC will bluffs.
     ///In Uno Flex the Wild Draw 4 has no restriction on its flex side (the NPC uses it whenever its Power Card is on),
     ///and any Wild card in the hand counts as a match for the color in play.
     /// </summary>
@@ -402,12 +402,15 @@ public partial class Game
         if (card is FlexCard && HasPower(player))
             return false;
 
-        return player.Hand.Any(other => other != card && MatchesColorInPlay(other));
+        if (rng.Next(1, 11) <= 4)
+            return false;
+        else
+            return player.Hand.Any(other => other != card && MatchesColorInPlay(other));
     }
 
     //Does this card count as a card of the color in play? (In Uno Flex wild cards count too.)
     private bool MatchesColorInPlay(Card card) =>
-        card.Color == CurrentColor || (Version == GameVersions.Flex && card.IsWild);
+        card.Color == CurrentColor || card.IsWild && card is not (WildDrawCard or WildDrawColorCard);
 
     // ---------------------------------------------------------------- internals
 
