@@ -1,6 +1,7 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.FlexVersion;
+using Uno_Game.Cards.FlipVersion;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 
@@ -27,6 +28,10 @@ public class NpcPlayer : Player
         foreach (Card card in playableCards)
         {
             if (nextPlayerIsAboutToWin && card.Face is SkipCard or DrawCard)
+                return card;
+
+            //NPC is bluffing
+            if (card.Face is WildDrawCard or WildDrawColorCard)
                 return card;
 
             if (best == null || card.Points < best.Points)
