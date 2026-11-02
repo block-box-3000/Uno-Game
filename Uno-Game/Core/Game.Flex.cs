@@ -124,16 +124,5 @@ namespace Uno_Game.Core
 
             ForceDraw(target, player, cards);
         }
-
-        /// <summary>
-        /// Regular side of the Wild Flex Draw 4: the next player draws 4 and misses their turn unless they challenge
-        /// (see <see cref="ResolveWildDraw"/>). Here any Wild card in the hand counts as a match for the color in play.
-        /// </summary>
-        public void WildDrawFour() =>
-            ResolveWildDraw("Wild Draw 4", player =>
-            {
-                ui.Show($"{player.Name} draws {WildDrawFourCards} card(s)", MessageStyle.Event);
-                DrawCards(player, WildDrawFourCards);
-            });
     }
 }

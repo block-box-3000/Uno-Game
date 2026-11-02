@@ -26,7 +26,7 @@ public class NpcPlayer : Player
         Card? best = null;
         foreach (Card card in playableCards)
         {
-            if (nextPlayerIsAboutToWin && card.Face is SkipCard)
+            if (nextPlayerIsAboutToWin && card.Face is SkipCard or DrawCard)
                 return card;
 
             if (best == null || card.Points < best.Points)

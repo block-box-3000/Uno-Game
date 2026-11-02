@@ -20,7 +20,47 @@ public static class FlexDeck
             {
                 bool flip = HasFlipSymbol(color, number);
                 cards.Add(NumberFace(color, number, flip));
-                cards.Add(new FlexCard(NumberFace(color, number, flip), new NumberCard(others[(number - 1) % others.Count], number)));
+                
+                CardColor auxColor = new();
+
+                switch (color)
+                {
+                    case CardColor.Red:
+                        auxColor = number switch
+                        {
+                            >= 4 and <= 6 => CardColor.Green,
+                            >= 7 and <= 8 => CardColor.Yellow,
+                            _ => CardColor.Blue
+                        };
+                        break;
+                    case CardColor.Yellow:
+                        auxColor = number switch
+                        {
+                            >= 4 and <= 6 => CardColor.Blue,
+                            >= 7 and <= 8 => CardColor.Red,
+                            _ => CardColor.Green
+                        };
+                        break;
+                    case CardColor.Blue:
+                        auxColor = number switch
+                        {
+                            >= 4 and <= 6 => CardColor.Yellow,
+                            >= 7 and <= 8 => CardColor.Green,
+                            _ => CardColor.Red
+                        };
+                        break;
+                    case CardColor.Green:
+                        auxColor = number switch
+                        {
+                            >= 4 and <= 6 => CardColor.Red,
+                            >= 7 and <= 8 => CardColor.Blue,
+                            _ => CardColor.Yellow
+                        };
+                        break;
+                }
+
+                cards.Add(new FlexCard(new NumberCard(color, number), 
+                    new NumberCard(auxColor, number)));
             }
 
             //Action cards: one classic and one flex card of each kind per color (both sides have the same color)
@@ -40,7 +80,7 @@ public static class FlexDeck
         }
 
         for (int i = 0; i < 2; i++)
-            cards.Add(new FlexCard(new WildDrawFourCard(), new TargetDrawCard(4), "Target draws 4"));
+            cards.Add(new FlexCard(new WildDrawCard(), new TargetDrawCard(4), "Target draws 4"));
 
         for (int i = 0; i < 6; i++)
             cards.Add(new WildAllFlipCard());

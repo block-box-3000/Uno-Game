@@ -157,7 +157,7 @@ public class Deck
         for (int i = 0; i < 4; i++)
         {
             yield return new WildCard();
-            yield return new DrawWildCard();
+            yield return new WildDrawCard();
         }
 
         if (packs.HasFlag(ExpansionPacks.Reverse))

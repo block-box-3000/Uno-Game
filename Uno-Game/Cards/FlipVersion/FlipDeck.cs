@@ -47,7 +47,7 @@ public static class FlipDeck
         for (int i = 0; i < 4; i++)
         {
             cards.Add(new WildCard(points: 40));
-            cards.Add(new WildDrawTwoCard());
+            cards.Add(new WildDrawCard(drawCount: 2));
         }
 
         return cards;
