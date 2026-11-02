@@ -410,7 +410,7 @@ public partial class Game
 
     //Does this card count as a card of the color in play? (In Uno Flex wild cards count too.)
     private bool MatchesColorInPlay(Card card) =>
-        card.Color == CurrentColor || (Version == GameVersions.Flex && card.IsWild);
+        card.Color == CurrentColor || card.IsWild && card is not (WildDrawCard or WildDrawColorCard);
 
     // ---------------------------------------------------------------- internals
 

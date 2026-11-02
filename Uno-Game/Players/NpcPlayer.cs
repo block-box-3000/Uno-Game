@@ -30,7 +30,6 @@ public class NpcPlayer : Player
             if (nextPlayerIsAboutToWin && card.Face is SkipCard or DrawCard)
                 return card;
 
-            //NPC is bluffing
             if (card.Face is WildDrawCard or WildDrawColorCard)
                 return card;
 
