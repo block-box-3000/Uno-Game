@@ -218,11 +218,33 @@ public partial class Game
             }
 
             if (required == 1)
+            {
                 ui.Show($"No cards available for {player.Name}, draw 1 card", MessageStyle.Warning);
-            else
-                ui.Show($"{player.Name} can't keep up with the speed! Draws {required} card(s)", MessageStyle.Warning);
+                Card drawnCard = Deck.Draw();
+                player.Hand.Add(drawnCard);
 
-            DrawCards(player, required);
+                if (trickPlayer == null
+                    && IsPlayable(drawnCard)
+                    && (player.IsHuman || !IsIllegalWildDraw(player, drawnCard))
+                    && player.ShouldPlayDrawnCard(this, drawnCard))
+                {
+                    if (Version == GameVersions.Flex && drawnCard is FlexCard flexCard)
+                        ChooseFlexSide(player, flexCard);
+
+                    PlayCard(player, drawnCard, announce: true);
+                    if (HasWon(player))
+                        return;
+
+                    drawnCard.Apply(this);
+                    if (Winner != null)
+                        return;
+                }
+            }
+            else
+            {
+                ui.Show($"{player.Name} can't keep up with the speed! Draws {required} card(s)", MessageStyle.Warning);
+                DrawCards(player, required);
+            }
             ResetSpeed();
 
             //Trick Wild Card: the player couldn't play anything

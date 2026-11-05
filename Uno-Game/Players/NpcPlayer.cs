@@ -40,6 +40,8 @@ public class NpcPlayer : Player
         return best!;
     }
 
+    public override bool ShouldPlayDrawnCard(Game game, Card card) => true;
+
     public override CardColor ChooseColor(Game game)
     {
         //Pick the color the NPC has the most in its hand
