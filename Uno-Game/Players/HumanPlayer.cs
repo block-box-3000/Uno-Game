@@ -34,6 +34,25 @@ public class HumanPlayer : Player
         }
     }
 
+    public override Card? ChooseCardOrDraw(Game game, IReadOnlyList<Card> playableCards)
+    {
+        ui.ShowTable(game.TopCard, game.CurrentColor, Hand, card => playableCards.Contains(card));
+        ui.Show($"{Hand.Count + 1}) Draw 1 card");
+
+        while (true)
+        {
+            int option = ui.AskNumber("", 1, Hand.Count + 1);
+            if (option == Hand.Count + 1)
+                return null;
+
+            Card chosen = Hand[option - 1];
+            if (playableCards.Contains(chosen))
+                return chosen;
+
+            ui.Show("Select a valid card", MessageStyle.Warning);
+        }
+    }
+
     public override bool ShouldPlayDrawnCard(Game game, Card card)
     {
         int option = ui.AskNumber(
