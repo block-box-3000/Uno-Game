@@ -1,10 +1,7 @@
 using Uno_Game.Cards;
-using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
-using Uno_Game.Cards.FrenemiesPack;
 using Uno_Game.Cards.ReversePack;
-using Uno_Game.Cards.StackPack;
 using Uno_Game.Players;
 using Uno_Game.UI;
 
@@ -221,11 +218,33 @@ public partial class Game
             }
 
             if (required == 1)
+            {
                 ui.Show($"No cards available for {player.Name}, draw 1 card", MessageStyle.Warning);
-            else
-                ui.Show($"{player.Name} can't keep up with the speed! Draws {required} card(s)", MessageStyle.Warning);
+                Card drawnCard = Deck.Draw();
+                player.Hand.Add(drawnCard);
 
-            DrawCards(player, required);
+                if (trickPlayer == null
+                    && IsPlayable(drawnCard)
+                    && (player.IsHuman || !IsIllegalWildDraw(player, drawnCard))
+                    && player.ShouldPlayDrawnCard(this, drawnCard))
+                {
+                    if (Version == GameVersions.Flex && drawnCard is FlexCard flexCard)
+                        ChooseFlexSide(player, flexCard);
+
+                    PlayCard(player, drawnCard, announce: true);
+                    if (HasWon(player))
+                        return;
+
+                    drawnCard.Apply(this);
+                    if (Winner != null)
+                        return;
+                }
+            }
+            else
+            {
+                ui.Show($"{player.Name} can't keep up with the speed! Draws {required} card(s)", MessageStyle.Warning);
+                DrawCards(player, required);
+            }
             ResetSpeed();
 
             //Trick Wild Card: the player couldn't play anything
@@ -327,13 +346,21 @@ public partial class Game
         ApplyPunishment(victim, source, drawCount, turnsSkipped);
     }
 
-    /// <summary>Wild Draw Cards: the next player draws n cards and misses their turn (unless challenged).</summary>
-    public void WildDrawCards(int drawCount) =>
-        ResolveWildDraw($"Wild Draw {drawCount}", player =>
+    /// <summary>
+    /// Wild Draw Cards: after the challenge decision, the next player may use an active Defense or Reverse pack
+    /// response before taking the draw and skip penalty.
+    /// </summary>
+    public void WildDrawCards(int drawCount)
+    {
+        if (TryChallengeWildDraw($"Wild Draw {drawCount}", player =>
         {
             ui.Show($"{player.Name} draws {drawCount} card(s)", MessageStyle.Event);
             DrawCards(player, drawCount);
-        });
+        }))
+            return;
+
+        PunishNextPlayer(drawCount, turnsSkipped: 1);
+    }
 
     /// <summary>Checks for a challenge before starting a Wild Draw stack. Returns true if challenged.</summary>
     public bool ChallengeWildDrawBeforeStack(int drawCount) =>

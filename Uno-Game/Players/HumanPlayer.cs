@@ -34,6 +34,13 @@ public class HumanPlayer : Player
         }
     }
 
+    public override bool ShouldPlayDrawnCard(Game game, Card card)
+    {
+        int option = ui.AskNumber(
+            $"{Name}, you drew {card}. Play it?\n1) Play\n2) Keep it", 1, 2);
+        return option == 1;
+    }
+
     public override CardColor ChooseColor(Game game)
     {
         //The colors depend on the side in play (Uno Flip)

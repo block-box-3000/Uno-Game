@@ -21,6 +21,9 @@ public abstract class Player
     /// <summary>Picks one of the playable cards.</summary>
     public abstract Card ChooseCard(Game game, IReadOnlyList<Card> playableCards);
 
+    /// <summary>Decides whether to play a newly drawn card when it is playable.</summary>
+    public abstract bool ShouldPlayDrawnCard(Game game, Card card);
+
     /// <summary>Picks the color after playing a wild card.</summary>
     public abstract CardColor ChooseColor(Game game);
 
