@@ -21,6 +21,10 @@ public abstract class Player
     /// <summary>Picks one of the playable cards.</summary>
     public abstract Card ChooseCard(Game game, IReadOnlyList<Card> playableCards);
 
+    /// <summary>Chooses a playable card or draws instead. Returning null means draw.</summary>
+    public virtual Card? ChooseCardOrDraw(Game game, IReadOnlyList<Card> playableCards) =>
+        ChooseCard(game, playableCards);
+
     /// <summary>Decides whether to play a newly drawn card when it is playable.</summary>
     public abstract bool ShouldPlayDrawnCard(Game game, Card card);
 

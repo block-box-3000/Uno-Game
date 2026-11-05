@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Uno_Game.Cards;
 using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
@@ -159,6 +160,7 @@ public partial class Game
         int required = SpeedLevel;
         int played = 0;
         Card? lastPlayed = null;
+        bool choseToDraw = false;
 
         //Uno Flip: the human always sees which side is up
         if (Version == GameVersions.Flip && player.IsHuman)
@@ -179,7 +181,16 @@ public partial class Game
             if (required > 1)
                 ui.Show($"{player.Name}: card {played + 1} of {required}", MessageStyle.Event);
 
-            Card card = player.ChooseCard(this, playable);
+            Card? selectedCard = required == 1 && played == 0
+                ? player.ChooseCardOrDraw(this, playable)
+                : player.ChooseCard(this, playable);
+            if (selectedCard == null)
+            {
+                choseToDraw = true;
+                break;
+            }
+
+            Card card = selectedCard;
             if (!playable.Contains(card))
                 throw new InvalidOperationException($"{player.Name} chose a card that can't be played: {card}");
 
@@ -219,7 +230,10 @@ public partial class Game
 
             if (required == 1)
             {
-                ui.Show($"No cards available for {player.Name}, draw 1 card", MessageStyle.Warning);
+                ui.Show(choseToDraw
+                    ? $"{player.Name} chooses to draw 1 card"
+                    : $"No cards available for {player.Name}, draw 1 card",
+                    choseToDraw ? MessageStyle.Event : MessageStyle.Warning);
                 Card drawnCard = Deck.Draw();
                 player.Hand.Add(drawnCard);
 
@@ -238,7 +252,7 @@ public partial class Game
                     drawnCard.Apply(this);
                     if (Winner != null)
                         return;
-                }
+                }                    
             }
             else
             {
