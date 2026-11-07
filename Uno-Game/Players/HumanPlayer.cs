@@ -53,6 +53,34 @@ public class HumanPlayer : Player
         }
     }
 
+    public override Player ChooseTeammate(IReadOnlyList<Player> candidates)
+    {
+        string playersList = string.Join("\n", candidates.Select((player, i) =>
+            $"{i + 1}) {player.Name}{(player == this ? " (you)" : "")}"));
+
+        int option = ui.AskNumber(
+            $"Choose your Uno Teams teammate\n{playersList}", 1, candidates.Count);
+        return candidates[option - 1];
+    }
+
+    public override IReadOnlyList<Card> ChooseTeamCardsToGive(Game game, Player teammate, int count)
+    {
+        var choices = new List<Card>(count);
+        var remaining = Hand.ToList();
+
+        for (int i = 0; i < count; i++)
+        {
+            string cards = string.Join("\n", remaining.Select((card, index) => $"{index + 1}) {card}"));
+            int option = ui.AskNumber(
+                $"Choose a card to give to {teammate.Name}\n{cards}",
+                1, remaining.Count);
+            choices.Add(remaining[option - 1]);
+            remaining.RemoveAt(option - 1);
+        }
+
+        return choices;
+    }
+
     public override bool ShouldPlayDrawnCard(Game game, Card card)
     {
         int option = ui.AskNumber(

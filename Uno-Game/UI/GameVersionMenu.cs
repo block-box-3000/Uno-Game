@@ -14,6 +14,7 @@ namespace Uno_Game.UI
             ("Uno", GameVersions.Normal),
             ("Uno Flip!", GameVersions.Flip),
             ("Uno Flex!", GameVersions.Flex),
+            ("Uno Teams!", GameVersions.Teams),
         };
 
         public static GameVersions Select(IGameUi ui)
