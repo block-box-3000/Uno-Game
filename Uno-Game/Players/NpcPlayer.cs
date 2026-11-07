@@ -30,7 +30,7 @@ public class NpcPlayer : Player
             if (nextPlayerIsAboutToWin && card.Face is SkipCard or DrawCard)
                 return card;
 
-            if (card.Face is WildDrawCard or WildDrawColorCard)
+            if (game.IsHitchCard(card))
                 return card;
 
             if (best == null || card.Points < best.Points)

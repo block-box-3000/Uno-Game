@@ -410,7 +410,9 @@ public partial class Game
         if (victim.ShouldChallenge(this, attacker, cardName))
         {
             ui.Show($"{victim.Name} challenges {attacker.Name}! {attacker.Name} shows their hand:", MessageStyle.Event);
-            ui.ShowHands(new List<(string PlayerName, IReadOnlyList<Card> Cards)> { (attacker.Name, attacker.Hand.ToList()) });
+            //Only if the human is envolved can see the cards of the hand
+            if(attacker.IsHuman || victim.IsHuman)
+                ui.ShowHands(new List<(string PlayerName, IReadOnlyList<Card> Cards)> { (attacker.Name, attacker.Hand.ToList()) });
             ui.Pause(ShortDelayMs);
 
             if (illegalPlay)
@@ -437,7 +439,7 @@ public partial class Game
     /// </summary>
     private bool IsIllegalWildDraw(Player player, Card card)
     {
-        if (card.Face is not (WildDrawCard or WildDrawColorCard))
+        if (IsHitchCard(card))
             return false;
 
         if (card is FlexCard && HasPower(player))
@@ -451,7 +453,14 @@ public partial class Game
 
     //Does this card count as a card of the color in play? (In Uno Flex wild cards count too.)
     private bool MatchesColorInPlay(Card card) =>
-        card.Color == CurrentColor || card.IsWild && card is not (WildDrawCard or WildDrawColorCard);
+        card.Color == CurrentColor || card.IsWild && !IsHitchCard(card);
+
+    /// <summary>
+    /// The list of cards with the special rule that should be the last option to play.
+    /// </summary>
+    public bool IsHitchCard(Card card) =>
+    card.Face is WildDrawCard or WildDrawColorCard || 
+        card is FlexCard { Flex: TargetDrawCard { DrawCount: 4 } };
 
     // ---------------------------------------------------------------- internals
 
@@ -478,7 +487,6 @@ public partial class Game
 
     private void PlayCard(Player player, Card card, bool announce)
     {
-        //Uno Flip: a Wild Draw card is only legal without a card of the color in play (see ResolveWildDraw)
         matchedColorInHand = player.Hand.Any(other => other != card && MatchesColorInPlay(other));
 
         player.Hand.Remove(card);
