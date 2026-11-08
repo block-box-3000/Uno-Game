@@ -124,9 +124,9 @@ namespace Uno_Game.Core
             }
 
             DrawCards(player, 2);
-            forcedNext = players[WrapIndex(teammate.Index + Direction)];
+            forcedNext = teammate;
             ui.Show(
-                $"{teammate.Name} has no playable cards. {player.Name} draws 2 cards and {teammate.Name} loses their turn",
+                $"{teammate.Name} has no playable cards. {player.Name} draws 2 cards",
                 MessageStyle.Event);
         }
 
