@@ -37,13 +37,10 @@ namespace Uno_Game.Core
             foreach (Player player in players)
             {
                 Player teammate = GetTeammate(player);
-                if (player.Index < teammate.Index)
-                {
-                    IReadOnlyList<Card> cards = player.ChooseTeamCardsToGive(this, teammate, 1);
-                    if (cards.Count != 1 || !player.Hand.Contains(cards[0]))
-                        throw new InvalidOperationException($"{player.Name} chose an invalid card to pass to {teammate.Name}.");
-                    passes.Add((player, teammate, cards[0]));
-                }
+                IReadOnlyList<Card> cards = player.ChooseTeamCardsToGive(this, teammate, 1);
+                if (cards.Count != 1 || !player.Hand.Contains(cards[0]))
+                    throw new InvalidOperationException($"{player.Name} chose an invalid card to pass to {teammate.Name}.");
+                passes.Add((player, teammate, cards[0]));
             }
 
             foreach ((Player giver, Player receiver, Card card) in passes)
