@@ -82,10 +82,9 @@ public partial class Game
         //The dealer is established, and the cards are dealt.
         int dealerIndex = this.rng.Next(this.players.Count);
         currentIndex = WrapIndex(dealerIndex + 1);
-        ui.Show(
-            $"{this.players[dealerIndex].Name} deals; {CurrentPlayer.Name} plays first\n",
-            MessageStyle.Event);
-        ui.Pause(ShortDelayMs);
+        ui.Show($"{this.players[dealerIndex].Name} deals", MessageStyle.Event);
+        ui.Show($"{CurrentPlayer.Name} plays first", MessageStyle.Event);
+        ui.Pause(TurnDelayMs);
     }
 
     /// <summary>Player 1 is the human, everyone else is an NPC.</summary>
@@ -195,9 +194,15 @@ public partial class Game
         if (Version == GameVersions.Flip && player.IsHuman)
             ui.Show($"--- {CurrentSide} side ---", MessageStyle.Event);
 
-        //Uno Flex: the human always sees their Power Card
+        //Uno Flex: the human always sees the players Power Card
         if (Version == GameVersions.Flex && player.IsHuman)
-            ui.Show($"--- Power Card: {(HasPower(player) ? "ON (green)" : "OFF (red)")} ---", MessageStyle.Event);
+        {
+            ui.Show("--------- Power Cards ----------", MessageStyle.Event);
+            foreach(Player p in players)
+                ui.Show($"{p.Name} Power Card: {(HasPower(p) ? "ON (green)" : "OFF (red)")}", 
+                     MessageStyle.Event);
+            ui.Show("--------------------------------", MessageStyle.Event);
+        } 
 
         while (played < required)
         {
@@ -534,6 +539,10 @@ public partial class Game
         //Uno Flex: a number card with the Flip symbol flips the Power Card of whoever plays it
         if (card.FlipsPowerCard)
             TogglePower(player);
+
+        //Uno Teams: a number card with the Swap symbol makes a player swaps a card with their team mate
+        if (card.SwapTeammateCard)
+            SwapCardWithTeammate();
     }
 
     /// <summary>Says UNO! when one card is left. Returns true if the player just won.</summary>

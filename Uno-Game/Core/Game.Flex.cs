@@ -86,6 +86,7 @@ namespace Uno_Game.Core
                     powerOff.Add(player);
             }
 
+            CheckAllPowersOff();
             ui.Show("Everybody flips their Power Card", MessageStyle.Event);
         }
 

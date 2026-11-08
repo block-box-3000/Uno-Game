@@ -25,9 +25,6 @@ public abstract class Player
     public virtual Card? ChooseCardOrDraw(Game game, IReadOnlyList<Card> playableCards) =>
         ChooseCard(game, playableCards);
 
-    /// <summary>Chooses a teammate before a Teams game starts.</summary>
-    public virtual Player ChooseTeammate(IReadOnlyList<Player> candidates) => candidates[0];
-
     /// <summary>Chooses cards to pass to this player's teammate in Uno Teams.</summary>
     public virtual IReadOnlyList<Card> ChooseTeamCardsToGive(Game game, Player teammate, int count) =>
         Hand.OrderByDescending(card => game.IsPlayable(card))

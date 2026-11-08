@@ -9,5 +9,5 @@ GameVersions version = GameVersionMenu.Select(ui);
 ExpansionPacks packs = version == GameVersions.Normal ? PackMenu.Select(ui) : ExpansionPacks.None;
 Console.Clear();
 
-Game game = Game.CreateStandard(packs, ui, version: version, playerCount: 6);
+Game game = Game.CreateStandard(packs, ui, version: version);
 game.Run();

@@ -13,7 +13,12 @@ public static class TeamsDeck
             for (int number = 1; number <= 9; number++)
             {
                 yield return new NumberCard(color, number);
-                yield return new NumberCard(color, number);
+
+                //Swap number cards only for numbers 1-5
+                if(number < 6)
+                    yield return new NumberSwapCard(color, number);
+                else
+                    yield return new NumberCard(color, number);
             }
 
             //Action cards: two of each per color
@@ -28,12 +33,12 @@ public static class TeamsDeck
         for (int i = 0; i < 4; i++)
         {
             yield return new WildCard();
-            //yield return new WildTeamDrawCard();
+            yield return new WildTeamDrawCard(4);
         }
 
         for (int i = 0; i < 8; i++)
         {
-            //yield return new WildTeamPlayCard();
+            yield return new WildTeamPlayCard();
         }
     }
 }
