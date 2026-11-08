@@ -13,7 +13,7 @@ public class WildAllFlipCard : Card
 
     public override void Apply(Game game)
     {
-        game.FlipAllPowerCards();
         game.ChooseColor();
+        game.FlipAllPowerCards();
     }
 }
