@@ -53,6 +53,72 @@ public class HumanPlayer : Player
         }
     }
 
+    public override TurnCardChoice ChooseTurnCard(
+        Game game,
+        IReadOnlyList<Card> playableCards,
+        bool canDraw,
+        bool canSayUno,
+        bool canAccuseUno)
+    {
+        bool saidUno = false;
+
+        while (true)
+        {
+            if (playableCards.Count > 0)
+                ui.ShowTable(game.TopCard, game.CurrentColor, Hand, card => playableCards.Contains(card));
+
+            int optionCount = playableCards.Count > 0 ? Hand.Count : 0;
+            int sayUnoOption = 0;
+            int accuseUnoOption = 0;
+            int drawOption = 0;
+
+            if (canSayUno && !saidUno)
+            {
+                sayUnoOption = ++optionCount;
+                ui.Show($"{sayUnoOption}) Say UNO");
+            }
+
+            if (canAccuseUno)
+            {
+                accuseUnoOption = ++optionCount;
+                ui.Show($"{accuseUnoOption}) Accuse {game.UnoPlayer!.Name} of not saying UNO");
+            }
+
+            if (canDraw)
+            {
+                drawOption = ++optionCount;
+                ui.Show($"{drawOption}) Draw 1 card");
+            }
+
+            if (optionCount == 0)
+                return new TurnCardChoice(null, saidUno);
+
+            int option = ui.AskNumber("", 1, optionCount);
+
+            if (option == sayUnoOption && sayUnoOption != 0)
+            {
+                game.AnnounceUno();
+                saidUno = true;
+                continue;
+            }
+
+            if (option == accuseUnoOption && accuseUnoOption != 0)
+            {
+                game.AccuseUno();
+                canAccuseUno = false;
+                continue;
+            }
+
+            if (option == drawOption && drawOption != 0)
+                return new TurnCardChoice(null, saidUno);
+
+            if (option <= Hand.Count && playableCards.Contains(Hand[option - 1]))
+                return new TurnCardChoice(Hand[option - 1], saidUno);
+
+            ui.Show("Select a valid card", MessageStyle.Warning);
+        }
+    }
+
     public override IReadOnlyList<Card> ChooseTeamCardsToGive(Game game, Player teammate, int count)
     {
         var choices = new List<Card>(count);

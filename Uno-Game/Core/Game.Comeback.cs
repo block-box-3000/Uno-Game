@@ -164,7 +164,7 @@ namespace Uno_Game.Core
             colorChosen = false;
             ChooseColor();
 
-            ui.Show($"{player.Name} says: UNO!", MessageStyle.Event);
+            AnnounceUno();
             return true;
         }
 
