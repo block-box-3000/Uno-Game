@@ -54,6 +54,32 @@ namespace Uno_Game.Core
             ui.Pause(ShortDelayMs);
         }
 
+        public void PassCardsTeammate(Player player)
+        {
+            Player teammate = GetTeammate(player);
+
+            if (player.Hand.Count > 1 && teammate.Hand.Count == 0)
+            {
+                int count = player.Hand.Count / 2;
+                IReadOnlyList<Card> passedCards = player.ChooseTeamCardsToGive(this, teammate, count);
+                if (passedCards.Count != count || passedCards.Distinct().Count() != count ||
+                    passedCards.Any(card => !player.Hand.Contains(card)))
+                    throw new InvalidOperationException($"{player.Name} chose invalid cards to pass to {teammate.Name}.");
+
+                foreach (Card card in passedCards)
+                {
+                    player.Hand.Remove(card);
+                    teammate.Hand.Add(card);
+                }
+
+                ui.Show($"{player.Name} passes {count} card(s) to {teammate.Name}", MessageStyle.Event);
+                if (teammate.Hand.Count == 1)
+                    AnnounceUno(teammate);
+                if (player.Hand.Count == 1)
+                    AnnounceUno(player);
+            }
+        }
+
         /// <summary>The current player and their teammate each choose one card to exchange.</summary>
         public void SwapCardWithTeammate()
         {

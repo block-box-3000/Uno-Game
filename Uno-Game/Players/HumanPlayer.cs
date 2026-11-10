@@ -97,7 +97,7 @@ public class HumanPlayer : Player
 
             if (option == sayUnoOption && sayUnoOption != 0)
             {
-                game.AnnounceUno();
+                game.AnnounceUno(game.CurrentPlayer);
                 saidUno = true;
                 continue;
             }

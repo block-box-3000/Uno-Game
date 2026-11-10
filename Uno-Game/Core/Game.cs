@@ -26,6 +26,7 @@ public partial class Game
     private int currentIndex;
     private bool repeatTurn;
     private bool unoCalled;
+    private bool unoAnnouncedDuringTurn;
     private Player? unoPlayer;
 
     //Did the player who just played a card hold another card of the color that was in play?
@@ -77,7 +78,7 @@ public partial class Game
         this.rng = rng ?? Random.Shared;
 
         foreach (Player player in this.players)
-            DrawCards(player, InitialHandSize);
+            InitialDrawCards(player, InitialHandSize);
 
         TopCard = Deck.TakeStartingCard();
         CurrentColor = TopCard.Color;
@@ -125,6 +126,7 @@ public partial class Game
     public void PlayTurn()
     {
         Player player = CurrentPlayer;
+        unoAnnouncedDuringTurn = false;
 
         if (Version == GameVersions.Teams && player.Hand.Count == 0)
         {
@@ -302,7 +304,7 @@ public partial class Game
                         return;
 
                     if (player.Hand.Count == 1)
-                        AnnounceUno();
+                        AnnounceUno(CurrentPlayer);
 
                     drawnCard.Apply(this);
                     if (Winner != null)
@@ -321,18 +323,22 @@ public partial class Game
                 return;
         }
 
-        unoPlayer = player;
-        unoCalled = currentPlayerSaidUno;
+        if (!unoAnnouncedDuringTurn)
+        {
+            unoPlayer = player;
+            unoCalled = currentPlayerSaidUno;
+        }
         ui.Pause(TurnDelayMs);
         AdvanceTurn();
         ui.Show("");
     }
 
-    public void AnnounceUno()
+    public void AnnounceUno(Player player)
     {
-        unoPlayer = CurrentPlayer;
+        unoPlayer = player;
         unoCalled = true;
-        ui.Show($"{CurrentPlayer.Name} says: UNO!", MessageStyle.Event);
+        unoAnnouncedDuringTurn = true;
+        ui.Show($"{player.Name} says: UNO!", MessageStyle.Event);
     }
 
     public void AccuseUno()
@@ -550,10 +556,19 @@ public partial class Game
             SkipFrom(victim, turnsSkipped);
     }
 
+    private void InitialDrawCards(Player player, int count)
+    {
+        for (int i = 0; i < count; i++)
+            player.Hand.Add(Deck.Draw());
+    }
+
     private void DrawCards(Player player, int count)
     {
         for (int i = 0; i < count; i++)
             player.Hand.Add(Deck.Draw());
+
+        if (Version == GameVersions.Teams)
+            PassCardsTeammate(player);
     }
 
     private void SkipFrom(Player firstSkipped, int turns)
@@ -630,9 +645,9 @@ public partial class Game
 
                 ui.Show($"{teammate.Name} passes {count} card(s) to {player.Name}", MessageStyle.Event);
                 if (player.Hand.Count == 1)
-                    AnnounceUno();
+                    AnnounceUno(CurrentPlayer);
                 if (teammate.Hand.Count == 1)
-                    ui.Show($"{teammate.Name} says: UNO!", MessageStyle.Event);
+                    AnnounceUno(teammate);
             }
         }
 
@@ -676,5 +691,9 @@ public partial class Game
     {
         TopCard = card;
         CurrentColor = color ?? card.Color;
+    }
+    public void ForceIndex(int index)
+    {
+        currentIndex = index;
     }
 }

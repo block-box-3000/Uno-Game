@@ -59,7 +59,7 @@ public class NpcPlayer : Player
 
         bool saidUno = canSayUno && rng.Next(1, 11) <= 8;
         if (saidUno)
-            game.AnnounceUno();
+            game.AnnounceUno(game.CurrentPlayer);
 
         return new TurnCardChoice(card, saidUno);
     }

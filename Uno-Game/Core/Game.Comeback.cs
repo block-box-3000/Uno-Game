@@ -164,7 +164,7 @@ namespace Uno_Game.Core
             colorChosen = false;
             ChooseColor();
 
-            AnnounceUno();
+            AnnounceUno(player);
             return true;
         }
 
