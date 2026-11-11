@@ -18,12 +18,16 @@ public partial class Game
     private const int TurnDelayMs = 2000;
     private const int ShortDelayMs = 1500;
     private const int FailedChallengeExtraCards = 2;
+    private const int AcusedUnoExtraCards = 2;
 
     private readonly IGameUi ui;
     private readonly Random rng;
     private readonly List<Player> players;
     private int currentIndex;
     private bool repeatTurn;
+    private bool unoCalled;
+    private bool unoAnnouncedDuringTurn;
+    private Player? unoPlayer;
 
     //Did the player who just played a card hold another card of the color that was in play?
     //It decides if a Wild Draw / Wild Draw Color was played legally. Set in PlayCard.
@@ -43,8 +47,11 @@ public partial class Game
 
     public Player CurrentPlayer => players[currentIndex];
     public Player? Winner { get; private set; }
+    public Player? UnoPlayer => unoPlayer;
+    public bool CanAccuseUno =>
+        unoPlayer != null && unoPlayer != CurrentPlayer && !unoCalled && unoPlayer.Hand.Count == 1;
 
-    /// <summary>The version of the game: normal Uno (with expansion packs) or Uno Flip.</summary>
+    /// <summary>The selected Uno version.</summary>
     public GameVersions Version { get; }
 
     public Game(IEnumerable<Player> players, Deck deck, ExpansionPacks packs, IGameUi ui, Random? rng = null,
@@ -53,30 +60,49 @@ public partial class Game
         this.players = players.ToList();
         if (this.players.Count < 2)
             throw new ArgumentException("A game needs at least 2 players.", nameof(players));
+        if (version == GameVersions.Teams && (this.players.Count < 4 || this.players.Count % 2 != 0))
+            throw new ArgumentException("Uno Teams requires an even number of players (at least 4) so teammates are not adjacent.", nameof(players));
         for (int i = 0; i < this.players.Count; i++)
         {
             if (this.players[i].Index != i)
                 throw new ArgumentException("Each player's Index must match its position in the list.", nameof(players));
         }
 
+        Version = version;
+        if (Version == GameVersions.Teams)
+            AssignTeammates();
+
         Deck = deck;
         Packs = packs;
-        Version = version;
         this.ui = ui;
         this.rng = rng ?? Random.Shared;
 
         foreach (Player player in this.players)
-            DrawCards(player, InitialHandSize);
+            InitialDrawCards(player, InitialHandSize);
 
         TopCard = Deck.TakeStartingCard();
         CurrentColor = TopCard.Color;
+
+        if (Version == GameVersions.Teams)
+            PassInitialTeamCards();
+
+        //The dealer is established, and the cards are dealt.
+        int dealerIndex = this.rng.Next(this.players.Count);
+        currentIndex = WrapIndex(dealerIndex + 1);
+        ui.Show($"{this.players[dealerIndex].Name} deals", MessageStyle.Event);
+        ui.Show($"{CurrentPlayer.Name} plays first", MessageStyle.Event);
+        ui.Pause(TurnDelayMs);
     }
 
     /// <summary>Player 1 is the human, everyone else is an NPC.</summary>
     public static Game CreateStandard(ExpansionPacks packs, IGameUi ui, int playerCount = 4, Random? rng = null,
         GameVersions version = GameVersions.Normal)
     {
-        //Uno Flip and Uno Flex have no expansion packs
+        if (version == GameVersions.Teams && (playerCount < 4 || playerCount % 2 != 0))
+            throw new ArgumentOutOfRangeException(nameof(playerCount), 
+                "Uno Teams requires an even number of players (at least 4) so teammates are not adjacent.");
+
+        //Only Uno regular has expansion packs
         if (version != GameVersions.Normal)
             packs = ExpansionPacks.None;
 
@@ -100,6 +126,16 @@ public partial class Game
     public void PlayTurn()
     {
         Player player = CurrentPlayer;
+        unoAnnouncedDuringTurn = false;
+
+        if (Version == GameVersions.Teams && player.Hand.Count == 0)
+        {
+            ui.Show($"{player.Name} is out of the game", MessageStyle.Event);
+            ui.Pause(TurnDelayMs);
+            AdvanceTurn();
+            ui.Show("");
+            return;
+        }
 
         //Defense pack: a skip penalty passed to this player makes them lose this turn
         if (skippedPlayers.Remove(player))
@@ -161,29 +197,47 @@ public partial class Game
         int played = 0;
         Card? lastPlayed = null;
         bool choseToDraw = false;
+        bool currentPlayerSaidUno = false;
 
         //Uno Flip: the human always sees which side is up
         if (Version == GameVersions.Flip && player.IsHuman)
             ui.Show($"--- {CurrentSide} side ---", MessageStyle.Event);
 
-        //Uno Flex: the human always sees their Power Card
+        //Uno Flex: the human always sees the players Power Card
         if (Version == GameVersions.Flex && player.IsHuman)
-            ui.Show($"--- Power Card: {(HasPower(player) ? "ON (green)" : "OFF (red)")} ---", MessageStyle.Event);
+        {
+            ui.Show("--------- Power Cards ----------", MessageStyle.Event);
+            foreach(Player p in players)
+                ui.Show($"{p.Name} Power Card: {(HasPower(p) ? "ON (green)" : "OFF (red)")}", 
+                     MessageStyle.Event);
+            ui.Show("--------------------------------", MessageStyle.Event);
+        } 
 
         while (played < required)
         {
             List<Card> playable = player.Hand
                 .Where(card => IsPlayable(card) && (player.IsHuman || !IsIllegalWildDraw(player, card)))
                 .ToList();
+            
             if (playable.Count == 0)
+            {
+                //In case player doesn't have any playable cards but can accuse uno
+                if (played == 0 && CanAccuseUno)
+                    player.ChooseTurnCard(this, playable, canDraw: false, canSayUno: false, canAccuseUno: true);
                 break;
+            }
 
             if (required > 1)
                 ui.Show($"{player.Name}: card {played + 1} of {required}", MessageStyle.Event);
 
-            Card? selectedCard = required == 1 && played == 0
-                ? player.ChooseCardOrDraw(this, playable)
-                : player.ChooseCard(this, playable);
+            TurnCardChoice choice = player.ChooseTurnCard(
+                this,
+                playable,
+                canDraw: required == 1 && played == 0,
+                canSayUno: player.Hand.Count == 2,
+                canAccuseUno: played == 0 && CanAccuseUno);
+            currentPlayerSaidUno |= choice.SaidUno;
+            Card? selectedCard = choice.Card;
             if (selectedCard == null)
             {
                 choseToDraw = true;
@@ -249,6 +303,9 @@ public partial class Game
                     if (HasWon(player))
                         return;
 
+                    if (player.Hand.Count == 1)
+                        AnnounceUno(CurrentPlayer);
+
                     drawnCard.Apply(this);
                     if (Winner != null)
                         return;
@@ -266,9 +323,35 @@ public partial class Game
                 return;
         }
 
+        if (!unoAnnouncedDuringTurn)
+        {
+            unoPlayer = player;
+            unoCalled = currentPlayerSaidUno;
+        }
         ui.Pause(TurnDelayMs);
         AdvanceTurn();
         ui.Show("");
+    }
+
+    public void AnnounceUno(Player player)
+    {
+        unoPlayer = player;
+        unoCalled = true;
+        unoAnnouncedDuringTurn = true;
+        ui.Show($"{player.Name} says: UNO!", MessageStyle.Event);
+    }
+
+    public void AccuseUno()
+    {
+        if (!CanAccuseUno)
+            throw new InvalidOperationException("There is no player to accuse of not saying UNO.");
+
+        Player accused = unoPlayer!;
+        ui.Show($"{CurrentPlayer.Name} accuses {accused.Name} of not saying UNO", MessageStyle.Event);
+        DrawCards(accused, AcusedUnoExtraCards);
+        ui.Show($"{accused.Name} draws {AcusedUnoExtraCards} card(s)", MessageStyle.Warning);
+        unoPlayer = null;
+        unoCalled = true;
     }
 
     public bool IsPlayable(Card card) =>
@@ -439,7 +522,7 @@ public partial class Game
     /// </summary>
     private bool IsIllegalWildDraw(Player player, Card card)
     {
-        if (IsHitchCard(card))
+        if (!IsHitchCard(card))
             return false;
 
         if (card is FlexCard && HasPower(player))
@@ -473,10 +556,19 @@ public partial class Game
             SkipFrom(victim, turnsSkipped);
     }
 
+    private void InitialDrawCards(Player player, int count)
+    {
+        for (int i = 0; i < count; i++)
+            player.Hand.Add(Deck.Draw());
+    }
+
     private void DrawCards(Player player, int count)
     {
         for (int i = 0; i < count; i++)
             player.Hand.Add(Deck.Draw());
+
+        if (Version == GameVersions.Teams)
+            PassCardsTeammate(player);
     }
 
     private void SkipFrom(Player firstSkipped, int turns)
@@ -505,19 +597,58 @@ public partial class Game
         //Uno Flex: a number card with the Flip symbol flips the Power Card of whoever plays it
         if (card.FlipsPowerCard)
             TogglePower(player);
+
+        //Uno Teams: a number card with the Swap symbol makes a player swaps a card with their team mate
+        if (card.SwapTeammateCard)
+            SwapCardWithTeammate();
     }
 
-    /// <summary>Says UNO! when one card is left. Returns true if the player just won.</summary>
+    /// <summary>Checks whether the player just won.</summary>
     private bool HasWon(Player player)
     {
-        if (player.Hand.Count == 1)
+        if (Version != GameVersions.Teams)
         {
-            ui.Show($"{player.Name} says: UNO!", MessageStyle.Event);
+            if (player.Hand.Count == 0)
+            {
+                DeclareWinner(player);
+                return true;
+            }
+
+            return false;
         }
-        else if (player.Hand.Count == 0)
+
+        if (player.Hand.Count == 0)
         {
-            DeclareWinner(player);
-            return true;
+            ui.Show($"{player.Name} has no cards left.");
+            ui.Pause(ShortDelayMs);
+
+            Player teammate = GetTeammate(player);
+            if (teammate.Hand.Count == 0)
+            {
+                DeclareWinner(player);
+                return true;
+            }
+
+            if (teammate.Hand.Count > 1)
+            {
+                int count = teammate.Hand.Count / 2;
+                IReadOnlyList<Card> passedCards = teammate.ChooseTeamCardsToGive(this, player, count);
+                if (passedCards.Count != count || passedCards.Distinct().Count() != count ||
+                    passedCards.Any(card => !teammate.Hand.Contains(card)))
+                    throw new InvalidOperationException($"{teammate.Name} chose invalid cards to pass to {player.Name}.");
+
+                foreach (Card card in passedCards)
+                {
+                    teammate.Hand.Remove(card);
+                    player.Hand.Add(card);
+                }
+
+                ui.Show($"{teammate.Name} passes {count} card(s) to {player.Name}", MessageStyle.Event);
+                if (player.Hand.Count == 1)
+                    AnnounceUno(CurrentPlayer);
+                if (teammate.Hand.Count == 1)
+                    AnnounceUno(teammate);
+            }
         }
 
         return false;
@@ -526,7 +657,10 @@ public partial class Game
     private void DeclareWinner(Player player)
     {
         Winner = player;
-        ui.Show($"\n{player.Name} wins!", MessageStyle.Success);
+        string winnerMessage = Version == GameVersions.Teams
+            ? $"\n{player.Name} and {GetTeammate(player).Name} win!"
+            : $"\n{player.Name} wins!";
+        ui.Show(winnerMessage, MessageStyle.Success);
 
         /*if (Version == GameVersions.Flip)
             ShowRoundScore(player);*/
@@ -557,5 +691,9 @@ public partial class Game
     {
         TopCard = card;
         CurrentColor = color ?? card.Color;
+    }
+    public void ForceIndex(int index)
+    {
+        currentIndex = index;
     }
 }

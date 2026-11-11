@@ -40,6 +40,30 @@ public class NpcPlayer : Player
         return best!;
     }
 
+    public override TurnCardChoice ChooseTurnCard(
+        Game game,
+        IReadOnlyList<Card> playableCards,
+        bool canDraw,
+        bool canSayUno,
+        bool canAccuseUno)
+    {
+        if (canAccuseUno && rng.Next(1, 11) <= 5)
+            game.AccuseUno();
+
+        if (playableCards.Count == 0)
+            return new TurnCardChoice(null, false);
+
+        Card? card = canDraw
+            ? ChooseCardOrDraw(game, playableCards)
+            : ChooseCard(game, playableCards);
+
+        bool saidUno = canSayUno && rng.Next(1, 11) <= 8;
+        if (saidUno)
+            game.AnnounceUno(game.CurrentPlayer);
+
+        return new TurnCardChoice(card, saidUno);
+    }
+
     public override bool ShouldPlayDrawnCard(Game game, Card card) => true;
 
     public override CardColor ChooseColor(Game game)

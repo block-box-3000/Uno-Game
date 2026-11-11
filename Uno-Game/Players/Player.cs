@@ -6,6 +6,8 @@ using Uno_Game.Core;
 
 namespace Uno_Game.Players;
 
+public readonly record struct TurnCardChoice(Card? Card, bool SaidUno);
+
 public abstract class Player
 {
     public int Index { get; }
@@ -24,6 +26,30 @@ public abstract class Player
     /// <summary>Chooses a playable card or draws instead. Returning null means draw.</summary>
     public virtual Card? ChooseCardOrDraw(Game game, IReadOnlyList<Card> playableCards) =>
         ChooseCard(game, playableCards);
+
+    /// <summary>Chooses a card or draw action and may declare UNO or accuse the previous player.</summary>
+    public virtual TurnCardChoice ChooseTurnCard(
+        Game game,
+        IReadOnlyList<Card> playableCards,
+        bool canDraw,
+        bool canSayUno,
+        bool canAccuseUno)
+    {
+        if (playableCards.Count == 0)
+            return new TurnCardChoice(null, false);
+
+        Card? card = canDraw
+            ? ChooseCardOrDraw(game, playableCards)
+            : ChooseCard(game, playableCards);
+        return new TurnCardChoice(card, false);
+    }
+
+    /// <summary>Chooses cards to pass to this player's teammate in Uno Teams.</summary>
+    public virtual IReadOnlyList<Card> ChooseTeamCardsToGive(Game game, Player teammate, int count) =>
+        Hand.OrderByDescending(card => game.IsPlayable(card))
+            .ThenBy(card => card.Points)
+            .Take(count)
+            .ToList();
 
     /// <summary>Decides whether to play a newly drawn card when it is playable.</summary>
     public abstract bool ShouldPlayDrawnCard(Game game, Card card);

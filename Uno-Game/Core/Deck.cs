@@ -9,6 +9,7 @@ using Uno_Game.Cards.ReversePack;
 using Uno_Game.Cards.SpeedPack;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Cards.SwapPack;
+using Uno_Game.Cards.TeamsVersion;
 
 namespace Uno_Game.Core;
 
@@ -47,6 +48,7 @@ public class Deck
     private IEnumerable<Card> NewCards() =>
         Side != null ? FlipDeck.CreateCards(Side, rng)
         : version == GameVersions.Flex ? FlexDeck.CreateCards()
+        : version == GameVersions.Teams ? TeamsDeck.CreateCards()
         : CreateCards(packs);
 
     public Card Draw()

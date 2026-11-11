@@ -10,12 +10,12 @@ public enum GameVersions
 {
     Normal = 0,
     Flip = 1,
-
-    // Planned modes (not implemented yet)    
     Flex = 2,
-    NoMercy = 3,
-    Teams = 4,
+    Teams = 3,
+
+    // Planned modes (not implemented yet)
+    Pop = 4,
     Party = 5,
     Liars = 6,
-    Pop = 7,
+    NoMercy = 7,
 }

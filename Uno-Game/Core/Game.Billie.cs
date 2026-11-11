@@ -65,6 +65,8 @@ namespace Uno_Game.Core
             for (int k = 0; k < players.Count; k++)
             {
                 Player player = players[WrapIndex(currentIndex + k)];
+                if (player.Hand.Count == 1)
+                    AnnounceUno(player);
                 if (player.Hand.Count == 0)
                 {
                     DeclareWinner(player);
