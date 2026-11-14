@@ -71,6 +71,7 @@ public class HumanPlayer : Player
             int sayUnoOption = 0;
             int accuseUnoOption = 0;
             int drawOption = 0;
+            int popOption = 0;
 
             if (canSayUno && !saidUno)
             {
@@ -88,6 +89,12 @@ public class HumanPlayer : Player
             {
                 drawOption = ++optionCount;
                 ui.Show($"{drawOption}) Draw 1 card");
+            }
+
+            if (canDraw && game.Version == GameVersions.Pop)
+            {
+                popOption = ++optionCount;
+                ui.Show($"{popOption}) Flip a Pop card");
             }
 
             if (optionCount == 0)
@@ -111,6 +118,9 @@ public class HumanPlayer : Player
 
             if (option == drawOption && drawOption != 0)
                 return new TurnCardChoice(null, saidUno);
+            
+            if (option == popOption && popOption != 0)
+                return new TurnCardChoice(null, saidUno, ChosePopCard: true);
 
             if (option <= Hand.Count && playableCards.Contains(Hand[option - 1]))
                 return new TurnCardChoice(Hand[option - 1], saidUno);
@@ -323,4 +333,16 @@ public class HumanPlayer : Player
     private string DescribePlayers(IEnumerable<Player> players) =>
         string.Join("\n", players.Select((player, i) =>
             $"{i + 1}) {player.Name}{(player == this ? " (you)" : "")} ({player.Hand.Count} cards)"));
+
+    public override Card ChoosePopUnoKeep(Game game, IReadOnlyList<Card> candidates)
+    {
+        string cards = string.Join("\n", candidates.Select((card, i) => $"{i + 1}) {card}"));
+
+        int option = ui.AskNumber(
+            $"{Name}, you draw the Pop Uno Card! You can discard down to one card for an instant UNO. Which card do you keep?\n" +
+            $"\n{cards}",
+            1, candidates.Count);
+
+        return candidates[option - 1];
+    }
 }

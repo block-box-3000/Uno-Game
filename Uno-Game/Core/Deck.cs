@@ -5,6 +5,7 @@ using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
 using Uno_Game.Cards.FrenemiesPack;
+using Uno_Game.Cards.PopVersion;
 using Uno_Game.Cards.ReversePack;
 using Uno_Game.Cards.SpeedPack;
 using Uno_Game.Cards.StackPack;
@@ -49,6 +50,7 @@ public class Deck
         Side != null ? FlipDeck.CreateCards(Side, rng)
         : version == GameVersions.Flex ? FlexDeck.CreateCards()
         : version == GameVersions.Teams ? TeamsDeck.CreateCards()
+        : version == GameVersions.Pop ? PopDeck.CreateCards()
         : CreateCards(packs);
 
     public Card Draw()

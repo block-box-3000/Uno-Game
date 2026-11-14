@@ -66,7 +66,19 @@ namespace Uno_Game.Core
             {
                 Player player = players[WrapIndex(currentIndex + k)];
                 if (player.Hand.Count == 1)
-                    AnnounceUno(player);
+                {
+                    UnoAnnouncedPlayers.Add(player);
+
+                    if(player == CurrentPlayer)
+                        AnnounceUno(player);
+                    else
+                    {
+                        unoPlayer = player;
+                        unoCalled = true;
+                        ui.Show($"{player.Name} says: UNO!", MessageStyle.Event);
+                    }
+                }
+                    
                 if (player.Hand.Count == 0)
                 {
                     DeclareWinner(player);

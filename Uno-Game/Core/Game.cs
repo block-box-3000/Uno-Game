@@ -1,7 +1,9 @@
+using System.Security;
 using System.Xml.Linq;
 using Uno_Game.Cards;
 using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
+using Uno_Game.Cards.PopVersion;
 using Uno_Game.Cards.ReversePack;
 using Uno_Game.Players;
 using Uno_Game.UI;
@@ -46,10 +48,13 @@ public partial class Game
     public int Direction { get; private set; } = 1;
 
     public Player CurrentPlayer => players[currentIndex];
+
+    private readonly HashSet<Player> UnoAnnouncedPlayers = new();
     public Player? Winner { get; private set; }
     public Player? UnoPlayer => unoPlayer;
     public bool CanAccuseUno =>
-        unoPlayer != null && unoPlayer != CurrentPlayer && !unoCalled && unoPlayer.Hand.Count == 1;
+        unoPlayer != null && unoPlayer != CurrentPlayer && !unoCalled && unoPlayer.Hand.Count == 1
+        && !HasUnoBeenAnnounced(unoPlayer);
 
     /// <summary>The selected Uno version.</summary>
     public GameVersions Version { get; }
@@ -69,13 +74,15 @@ public partial class Game
         }
 
         Version = version;
+
         if (Version == GameVersions.Teams)
             AssignTeammates();
-
         Deck = deck;
         Packs = packs;
         this.ui = ui;
         this.rng = rng ?? Random.Shared;
+        if (Version == GameVersions.Pop)
+            InitializePopDeck();
 
         foreach (Player player in this.players)
             InitialDrawCards(player, InitialHandSize);
@@ -197,6 +204,7 @@ public partial class Game
         int played = 0;
         Card? lastPlayed = null;
         bool choseToDraw = false;
+        bool chosePopCard = false;
         bool currentPlayerSaidUno = false;
 
         //Uno Flip: the human always sees which side is up
@@ -221,9 +229,22 @@ public partial class Game
             
             if (playable.Count == 0)
             {
-                //In case player doesn't have any playable cards but can accuse uno
-                if (played == 0 && CanAccuseUno)
+                if (played == 0 && Version == GameVersions.Pop)
+                {
+                    TurnCardChoice noPlayableChoice = player.ChooseTurnCard(
+                        this,
+                        playable,
+                        canDraw: required == 1,
+                        canSayUno: false,
+                        canAccuseUno: CanAccuseUno);
+                    currentPlayerSaidUno |= noPlayableChoice.SaidUno;
+                    choseToDraw = true;
+                    chosePopCard = noPlayableChoice.ChosePopCard;
+                }
+                else if (played == 0 && CanAccuseUno)
+                {
                     player.ChooseTurnCard(this, playable, canDraw: false, canSayUno: false, canAccuseUno: true);
+                }
                 break;
             }
 
@@ -238,9 +259,11 @@ public partial class Game
                 canAccuseUno: played == 0 && CanAccuseUno);
             currentPlayerSaidUno |= choice.SaidUno;
             Card? selectedCard = choice.Card;
+
             if (selectedCard == null)
             {
                 choseToDraw = true;
+                chosePopCard = choice.ChosePopCard;
                 break;
             }
 
@@ -284,32 +307,39 @@ public partial class Game
 
             if (required == 1)
             {
-                ui.Show(choseToDraw
-                    ? $"{player.Name} chooses to draw 1 card"
-                    : $"No cards available for {player.Name}, draw 1 card",
-                    choseToDraw ? MessageStyle.Event : MessageStyle.Warning);
-                Card drawnCard = Deck.Draw();
-                player.Hand.Add(drawnCard);
-
-                if (trickPlayer == null
-                    && IsPlayable(drawnCard)
-                    && (player.IsHuman || !IsIllegalWildDraw(player, drawnCard))
-                    && player.ShouldPlayDrawnCard(this, drawnCard))
+                if (Version == GameVersions.Pop && chosePopCard)
                 {
-                    if (Version == GameVersions.Flex && drawnCard is FlexCard flexCard)
-                        ChooseFlexSide(player, flexCard);
+                    PopDeck.PopDraw(this, player);
+                }
+                else
+                {
+                    ui.Show(choseToDraw
+                        ? $"{player.Name} chooses to draw 1 card"
+                        : $"No cards available for {player.Name}, draw 1 card",
+                        choseToDraw ? MessageStyle.Event : MessageStyle.Warning);
+                    Card drawnCard = Deck.Draw();
+                    player.Hand.Add(drawnCard);
 
-                    PlayCard(player, drawnCard, announce: true);
-                    if (HasWon(player))
-                        return;
+                    if (trickPlayer == null
+                        && IsPlayable(drawnCard)
+                        && (player.IsHuman || !IsIllegalWildDraw(player, drawnCard))
+                        && player.ShouldPlayDrawnCard(this, drawnCard))
+                    {
+                        if (Version == GameVersions.Flex && drawnCard is FlexCard flexCard)
+                            ChooseFlexSide(player, flexCard);
 
-                    if (player.Hand.Count == 1)
-                        AnnounceUno(CurrentPlayer);
+                        PlayCard(player, drawnCard, announce: true);
+                        if (HasWon(player))
+                            return;
 
-                    drawnCard.Apply(this);
-                    if (Winner != null)
-                        return;
-                }                    
+                        if (player.Hand.Count == 1)
+                            AnnounceUno(CurrentPlayer);
+
+                        drawnCard.Apply(this);
+                        if (Winner != null)
+                            return;
+                    }
+                }
             }
             else
             {
@@ -359,6 +389,9 @@ public partial class Game
         || CanMatchWithFlexColor(card);
 
     public Player NextPlayer() => players[WrapIndex(currentIndex + Direction)];
+
+    public Player NextPlayer(Player player) =>
+        players[WrapIndex(player.Index + Direction)];
 
     // ---------------------------------------------------------------- operations used by cards
 
@@ -567,6 +600,9 @@ public partial class Game
         for (int i = 0; i < count; i++)
             player.Hand.Add(Deck.Draw());
 
+        if (count > 0)
+            ClearUnoAnnouncement(player);
+
         if (Version == GameVersions.Teams)
             PassCardsTeammate(player);
     }
@@ -582,6 +618,7 @@ public partial class Game
         matchedColorInHand = player.Hand.Any(other => other != card && MatchesColorInPlay(other));
 
         player.Hand.Remove(card);
+        ClearUnoAnnouncement(player);
         Deck.Discard(TopCard);
         TopCard = card;
         CurrentColor = card.Color; //Wild cards choose their color in Apply
@@ -665,6 +702,12 @@ public partial class Game
         /*if (Version == GameVersions.Flip)
             ShowRoundScore(player);*/
     }
+
+    private bool HasUnoBeenAnnounced(Player player) =>
+        player.Hand.Count == 1 && UnoAnnouncedPlayers.Contains(player);
+
+    private void ClearUnoAnnouncement(Player player) =>
+        UnoAnnouncedPlayers.Remove(player);
 
     private void AdvanceTurn()
     {

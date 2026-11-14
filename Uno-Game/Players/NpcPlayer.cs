@@ -51,7 +51,13 @@ public class NpcPlayer : Player
             game.AccuseUno();
 
         if (playableCards.Count == 0)
+        {
+            if (canDraw && game.Version == GameVersions.Pop && rng.Next(1, 4) == 1)
+                return new TurnCardChoice(null, false, ChosePopCard: true);
+            
             return new TurnCardChoice(null, false);
+        }
+            
 
         Card? card = canDraw
             ? ChooseCardOrDraw(game, playableCards)
@@ -185,4 +191,7 @@ public class NpcPlayer : Player
 
         return (fewest, others[^1]);
     }
+
+    public override Card ChoosePopUnoKeep(Game game, IReadOnlyList<Card> candidates) =>
+        candidates.FirstOrDefault(card => card.IsWild) ?? candidates.OrderBy(card => card.Points).First();
 }

@@ -6,7 +6,7 @@ using Uno_Game.Core;
 
 namespace Uno_Game.Players;
 
-public readonly record struct TurnCardChoice(Card? Card, bool SaidUno);
+public readonly record struct TurnCardChoice(Card? Card, bool SaidUno, bool ChosePopCard = false);
 
 public abstract class Player
 {
@@ -133,4 +133,11 @@ public abstract class Player
 
     /// <summary>Uno Flex: the other player who draws <paramref name="cards"/> cards (flex side of the Wild Flex Draw 2 and Draw 4).</summary>
     public abstract Player ChooseFlexTarget(Game game, int cards);
+
+    /// <summary>
+    /// Pop Uno Card:when the player draws this card cand descard all of their cards but one
+    /// Returns the card to keep among <paramref name="candidates"/> to discard down to
+    /// one card, or null to play normally.
+    /// </summary>
+    public abstract Card ChoosePopUnoKeep(Game game, IReadOnlyList<Card> candidates);
 }
