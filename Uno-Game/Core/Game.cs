@@ -97,7 +97,7 @@ public partial class Game
         int dealerIndex = this.rng.Next(this.players.Count);
         currentIndex = WrapIndex(dealerIndex + 1);
         ui.Show($"{this.players[dealerIndex].Name} deals", MessageStyle.Event);
-        ui.Show($"{CurrentPlayer.Name} plays first", MessageStyle.Event);
+        ui.Show($"{CurrentPlayer.Name} plays first\n", MessageStyle.Event);
         ui.Pause(TurnDelayMs);
     }
 

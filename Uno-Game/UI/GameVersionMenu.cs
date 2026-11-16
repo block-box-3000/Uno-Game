@@ -11,7 +11,7 @@ namespace Uno_Game.UI
     {
         private static readonly (string Name, GameVersions Ver)[] Available =
         {
-            ("Uno", GameVersions.Normal),
+            ("Uno!", GameVersions.Normal),
             ("Uno Flip!", GameVersions.Flip),
             ("Uno Flex!", GameVersions.Flex),
             ("Uno Teams!", GameVersions.Teams),

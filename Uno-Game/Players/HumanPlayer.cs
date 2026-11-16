@@ -21,6 +21,7 @@ public class HumanPlayer : Player
     public override Card ChooseCard(Game game, IReadOnlyList<Card> playableCards)
     {
         ui.ShowTable(game.TopCard, game.CurrentColor, Hand, card => playableCards.Contains(card));
+        ui.ShowGameDirection(game.Direction);
 
         while (true)
         {
@@ -64,6 +65,8 @@ public class HumanPlayer : Player
 
         while (true)
         {
+            ui.ShowGameDirection(game.Direction);
+
             if (playableCards.Count > 0)
                 ui.ShowTable(game.TopCard, game.CurrentColor, Hand, card => playableCards.Contains(card));
 

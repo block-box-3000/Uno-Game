@@ -76,6 +76,14 @@ public class ConsoleUi : IGameUi
         Console.ResetColor();
     }
 
+    public void ShowGameDirection(int gameDirection)
+    {
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        string direction = gameDirection == 1 ? "Clockwise" : "Anticlockwise";
+        Console.WriteLine($"Game flow is: {direction}");
+        Console.ResetColor();
+    }
+
     private static ConsoleColor ToConsoleColor(CardColor color) => color switch
     {
         CardColor.Red => ConsoleColor.Red,
