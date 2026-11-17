@@ -1,5 +1,3 @@
-using System.Security;
-using System.Xml.Linq;
 using Uno_Game.Cards;
 using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
@@ -63,16 +61,10 @@ public partial class Game
         GameVersions version = GameVersions.Normal)
     {
         this.players = players.ToList();
-        if (this.players.Count < 2)
-            throw new ArgumentException("A game needs at least 2 players.", nameof(players));
-        
-        if (version == GameVersions.Teams && (this.players.Count < 4 || this.players.Count > 8 
-            || this.players.Count % 2 != 0))
-            throw new ArgumentException("Uno Teams requires an even number of players " +
-                "(at least 4 and not more than 8) so teammates are not adjacent.", nameof(players));
-        
-        if (version == GameVersions.Party && (this.players.Count < 6 || this.players.Count > 14))
-            throw new ArgumentException("Uno Party requires at between 6-14 players.", nameof(players));
+        (bool notValidPlayerCant, string warningMessage) = CheckPlayerCant(version);
+
+        if (notValidPlayerCant)
+            throw new ArgumentException(warningMessage, nameof(players));
         
         for (int i = 0; i < this.players.Count; i++)
         {
@@ -84,10 +76,12 @@ public partial class Game
 
         if (Version == GameVersions.Teams)
             AssignTeammates();
+
         Deck = deck;
         Packs = packs;
         this.ui = ui;
         this.rng = rng ?? Random.Shared;
+
         if (Version == GameVersions.Pop)
             InitializePopDeck();
 
@@ -589,6 +583,39 @@ public partial class Game
 
     // ---------------------------------------------------------------- internals
 
+    private (bool,string) CheckPlayerCant(GameVersions version)
+    {
+        bool isNotValidPlayerCount = false;
+        string message = "";
+        switch (version)
+        {
+            case GameVersions.Normal:
+            case GameVersions.Flip:
+                isNotValidPlayerCount = players.Count < 2 || players.Count > 10;
+                message = "The game needs at least 2 players and not more than 10 players.";
+                break;
+            case GameVersions.Flex:
+                isNotValidPlayerCount = players.Count < 2 || players.Count > 8;
+                message = "The game needs at least 2 players and not more than 8 players.";
+                break;
+            case GameVersions.Teams:
+                isNotValidPlayerCount = players.Count < 4 || players.Count > 8 ||
+                    players.Count % 2 != 0;
+                message = "Uno Teams requires an even number of players " +
+                "(at least 4 and not more than 8) so teammates are not adjacent.";
+                break;
+            case GameVersions.Pop:
+                isNotValidPlayerCount = players.Count < 2 || players.Count > 6;
+                message = "The game needs at least 2 players and not more than 6 players.";
+                break;
+            case GameVersions.Party:
+                isNotValidPlayerCount = players.Count < 6 || players.Count > 14;
+                message = "The game needs at least 6 players and not more than 14 players.";
+                break;
+        }
+        return (isNotValidPlayerCount, message);
+    }
+    
     private void ApplyPunishment(Player victim, Player source, int drawCount, int turnsSkipped)
     {
         if (drawCount > 0 && !ForceDraw(victim, source, drawCount))
