@@ -333,6 +333,28 @@ public class HumanPlayer : Player
     public override Player ChooseFlexTarget(Game game, int cards) =>
         ChoosePlayer(game.Players.Where(player => player != this).ToList(), $"Choose the player who draws {cards} cards");
 
+    public override Player ChoosePointTakenTarget(Game game, IReadOnlyList<Player> candidates) =>
+        ChoosePlayer(candidates, "Point Taken: point at another player");
+
+    public override (Player First, Player Second) ChoosePlayersToConnect(
+        Game game,
+        IReadOnlyList<Player> candidates)
+    {
+        int firstIndex = ui.AskNumber(
+            $"Drawn Together: choose the first player to connect\n{DescribePlayers(candidates)}",
+            1,
+            candidates.Count);
+        Player first = candidates[firstIndex - 1];
+
+        List<Player> remaining = candidates.Where(player => player != first).ToList();
+        int secondIndex = ui.AskNumber(
+            $"Drawn Together: choose the second player to connect\n{DescribePlayers(remaining)}",
+            1,
+            remaining.Count);
+
+        return (first, remaining[secondIndex - 1]);
+    }
+
     private string DescribePlayers(IEnumerable<Player> players) =>
         string.Join("\n", players.Select((player, i) =>
             $"{i + 1}) {player.Name}{(player == this ? " (you)" : "")} ({player.Hand.Count} cards)"));

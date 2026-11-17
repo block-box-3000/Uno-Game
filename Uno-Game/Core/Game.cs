@@ -65,8 +65,15 @@ public partial class Game
         this.players = players.ToList();
         if (this.players.Count < 2)
             throw new ArgumentException("A game needs at least 2 players.", nameof(players));
-        if (version == GameVersions.Teams && (this.players.Count < 4 || this.players.Count % 2 != 0))
-            throw new ArgumentException("Uno Teams requires an even number of players (at least 4) so teammates are not adjacent.", nameof(players));
+        
+        if (version == GameVersions.Teams && (this.players.Count < 4 || this.players.Count > 8 
+            || this.players.Count % 2 != 0))
+            throw new ArgumentException("Uno Teams requires an even number of players " +
+                "(at least 4 and not more than 8) so teammates are not adjacent.", nameof(players));
+        
+        if (version == GameVersions.Party && (this.players.Count < 6 || this.players.Count > 14))
+            throw new ArgumentException("Uno Party requires at between 6-14 players.", nameof(players));
+        
         for (int i = 0; i < this.players.Count; i++)
         {
             if (this.players[i].Index != i)
@@ -319,6 +326,8 @@ public partial class Game
                         choseToDraw ? MessageStyle.Event : MessageStyle.Warning);
                     Card drawnCard = Deck.Draw();
                     player.Hand.Add(drawnCard);
+                    ClearUnoAnnouncement(player);
+                    MirrorDrawToConnectedPlayer(player, 1);
 
                     if (trickPlayer == null
                         && IsPlayable(drawnCard)
@@ -596,6 +605,12 @@ public partial class Game
     }
 
     private void DrawCards(Player player, int count)
+    {
+        DrawCardsWithoutConnection(player, count);
+        MirrorDrawToConnectedPlayer(player, count);
+    }
+
+    private void DrawCardsWithoutConnection(Player player, int count)
     {
         for (int i = 0; i < count; i++)
             player.Hand.Add(Deck.Draw());

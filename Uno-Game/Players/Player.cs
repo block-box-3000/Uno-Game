@@ -134,6 +134,14 @@ public abstract class Player
     /// <summary>Uno Flex: the other player who draws <paramref name="cards"/> cards (flex side of the Wild Flex Draw 2 and Draw 4).</summary>
     public abstract Player ChooseFlexTarget(Game game, int cards);
 
+    /// <summary>Uno Party, Point Taken: chooses another player to point at.</summary>
+    public abstract Player ChoosePointTakenTarget(Game game, IReadOnlyList<Player> candidates);
+
+    /// <summary>Uno Party, Drawn Together: chooses two unconnected players to link.</summary>
+    public abstract (Player First, Player Second) ChoosePlayersToConnect(
+        Game game,
+        IReadOnlyList<Player> candidates);
+
     /// <summary>
     /// Pop Uno Card:when the player draws this card cand descard all of their cards but one
     /// Returns the card to keep among <paramref name="candidates"/> to discard down to

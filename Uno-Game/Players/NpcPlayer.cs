@@ -170,6 +170,20 @@ public class NpcPlayer : Player
 
     public override Player ChooseFlexTarget(Game game, int cards) => ClosestToWinning(game);
 
+    public override Player ChoosePointTakenTarget(Game game, IReadOnlyList<Player> candidates) =>
+        candidates.OrderBy(player => player.Hand.Count).First();
+
+    public override (Player First, Player Second) ChoosePlayersToConnect(
+        Game game,
+        IReadOnlyList<Player> candidates)
+    {
+        List<Player> selected = candidates
+            .OrderBy(player => player.Hand.Count)
+            .Take(2)
+            .ToList();
+        return (selected[0], selected[1]);
+    }
+
     private Player ClosestToWinning(Game game) =>
         game.Players.Where(player => player != this).OrderBy(player => player.Hand.Count).First();
 

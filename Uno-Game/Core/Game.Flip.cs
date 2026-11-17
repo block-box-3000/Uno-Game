@@ -68,6 +68,7 @@ public partial class Game
         }
 
         ui.Show($"{player.Name} draws {drawn} card(s) until getting a {color} card", MessageStyle.Event);
+        MirrorDrawToConnectedPlayer(player, drawn);
 
         if (extraCards > 0)
             DrawCards(player, extraCards);

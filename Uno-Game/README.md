@@ -12,6 +12,8 @@ Al iniciar eliges los packs de expansión (se activan/desactivan con su número)
 
 ## Reglas especiales
 
+- **Uno Party, Point Taken**: después de contar 3, 2, 1, cada jugador elige a otro jugador. Cada persona roba una carta por cada voto recibido, hasta un máximo de 5; al jugar Point Taken se terminan las conexiones.
+- **Uno Party, Drawn Together**: conecta dos jugadores que no estén enlazados. Cada vez que uno roba cartas, el otro roba la misma cantidad. Las conexiones terminan al jugar Point Taken.
 - **Uno Pop!**: en tu turno puedes jugar de tu mano, robar una carta UNO normal o voltear una carta Pop. Las cartas Pop +0, +1, +2 y +3 acumulan puntos y terminan el turno; al revelar Pop +1 o Pop +2, ese jugador roba del mazo UNO la suma acumulada. Después, el contador se reinicia y todas las cartas Pop se barajan en su pila separada. Pop Uno reduce la mano a una carta y anuncia ¡UNO! Discard All descarta todas las cartas de tu mano del mismo color.
 - **Reverse pack**: Reverse Skip, Reverse Draw 2, Wild Power Reverse (invierte y vuelves a jugar) y Wild No U
   (invierte al jugarla; si la tienes en la mano cuando te castigan con Draw/Skip, devuelve el castigo a quien lo jugó).
