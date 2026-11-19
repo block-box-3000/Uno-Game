@@ -148,4 +148,19 @@ public abstract class Player
     /// one card, or null to play normally.
     /// </summary>
     public abstract Card ChoosePopUnoKeep(Game game, IReadOnlyList<Card> candidates);
+
+    /// <summary>Uno Liars: names the card represented by a hidden Liar card.</summary>
+    public abstract Card ChooseLiarClaim(Game game, IReadOnlyList<Card> possibleClaims);
+
+    /// <summary>Uno Liars: decides whether to challenge the previous player's declaration.</summary>
+    public abstract bool ShouldChallengeLiar(Game game, Player liar, Card declaredCard);
+
+    /// <summary>Uno Liars, Wild Liar's Challenge: chooses the face-down card to place in front of this player.</summary>
+    public abstract Card ChooseWildLiarsChallengeCard(Game game, CardColor claimedColor);
+
+    /// <summary>Uno Liars, Wild Liar's Challenge: names a card of the chosen color when this player has no matching card.</summary>
+    public abstract Card ChooseWildLiarsChallengeClaim(Game game, CardColor claimedColor, IReadOnlyList<Card> possibleClaims);
+
+    /// <summary>Uno Liars, Wild Liar's Challenge: chooses another player to reveal their face-down card.</summary>
+    public abstract Player ChooseWildLiarsChallengeTarget(Game game, IReadOnlyList<Player> candidates);
 }

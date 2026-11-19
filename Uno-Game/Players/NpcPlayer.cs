@@ -208,4 +208,33 @@ public class NpcPlayer : Player
 
     public override Card ChoosePopUnoKeep(Game game, IReadOnlyList<Card> candidates) =>
         candidates.FirstOrDefault(card => card.IsWild) ?? candidates.OrderBy(card => card.Points).First();
+
+    public override Card ChooseLiarClaim(Game game, IReadOnlyList<Card> possibleClaims) =>
+        possibleClaims[rng.Next(possibleClaims.Count)];
+
+    public override bool ShouldChallengeLiar(Game game, Player liar, Card declaredCard) =>
+        rng.Next(1, 11) <= 5;
+
+    public override Card ChooseWildLiarsChallengeCard(Game game, CardColor claimedColor)
+    {
+        IReadOnlyList<Card> matching = Hand
+            .Where(card => card.Color == claimedColor)
+            .ToList();
+        IReadOnlyList<Card> candidates = matching.Count > 0 ? matching : Hand;
+        return candidates[rng.Next(candidates.Count)];
+    }
+
+    public override Card ChooseWildLiarsChallengeClaim(
+        Game game,
+        CardColor claimedColor,
+        IReadOnlyList<Card> possibleClaims)
+    {
+        IReadOnlyList<Card> claims = possibleClaims
+            .Where(card => card.Color == claimedColor)
+            .ToList();
+        return claims[rng.Next(claims.Count)];
+    }
+
+    public override Player ChooseWildLiarsChallengeTarget(Game game, IReadOnlyList<Player> candidates) =>
+        candidates.OrderBy(player => player.Hand.Count).First();
 }

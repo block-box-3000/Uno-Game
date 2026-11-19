@@ -49,6 +49,8 @@ public partial class Game
 
     private readonly HashSet<Player> UnoAnnouncedPlayers = new();
     public Player? Winner { get; private set; }
+    private readonly HashSet<Player> winners = new();
+    public IReadOnlyCollection<Player> Winners => winners;
     public Player? UnoPlayer => unoPlayer;
     public bool CanAccuseUno =>
         unoPlayer != null && unoPlayer != CurrentPlayer && !unoCalled && unoPlayer.Hand.Count == 1
@@ -225,7 +227,8 @@ public partial class Game
         while (played < required)
         {
             List<Card> playable = player.Hand
-                .Where(card => IsPlayable(card) && (player.IsHuman || !IsIllegalWildDraw(player, card)))
+                .Where(card => IsPlayable(card) &&
+                    (player.IsHuman || card.IsLiarCard || !IsIllegalWildDraw(player, card)))
                 .ToList();
             
             if (playable.Count == 0)
@@ -276,20 +279,27 @@ public partial class Game
             if (Version == GameVersions.Flex && card is FlexCard flexCard)
                 ChooseFlexSide(player, flexCard);
 
-            PlayCard(player, card, announce: true);
+            Card? effectCard = PlayCardWithLiars(player, card, announce: true);
             played++;
-            lastPlayed = card;
+            if (effectCard == null)
+            {
+                lastPlayed = null;
+                played = required;
+                break;
+            }
+
+            lastPlayed = effectCard;
             if (HasWon(player))
                 return;
 
             if (played == required)
             {
                 //Only the last card of the turn has its effect
-                card.Apply(this);
+                effectCard.Apply(this);
                 if (Winner != null)
                     return;
             }
-            else if (card.IsWild)
+            else if (effectCard.IsWild)
             {
                 //Not the last card, but the color is needed to keep playing
                 ChooseColor();
@@ -320,27 +330,37 @@ public partial class Game
                         choseToDraw ? MessageStyle.Event : MessageStyle.Warning);
                     Card drawnCard = Deck.Draw();
                     player.Hand.Add(drawnCard);
+                    if (player.IsHuman)
+                    {
+                        string drawnCardName = drawnCard.IsLiarCard
+                            ? $"{drawnCard.RevealIdentity()} (Liar card)"
+                            : drawnCard.ToString();
+                        ui.Show($"You draw: {drawnCardName}", MessageStyle.Event);
+                    }
                     ClearUnoAnnouncement(player);
                     MirrorDrawToConnectedPlayer(player, 1);
 
                     if (trickPlayer == null
                         && IsPlayable(drawnCard)
-                        && (player.IsHuman || !IsIllegalWildDraw(player, drawnCard))
+                        && (player.IsHuman || drawnCard.IsLiarCard || !IsIllegalWildDraw(player, drawnCard))
                         && player.ShouldPlayDrawnCard(this, drawnCard))
                     {
                         if (Version == GameVersions.Flex && drawnCard is FlexCard flexCard)
                             ChooseFlexSide(player, flexCard);
 
-                        PlayCard(player, drawnCard, announce: true);
-                        if (HasWon(player))
-                            return;
+                        Card? effectCard = PlayCardWithLiars(player, drawnCard, announce: true);
+                        if (effectCard != null)
+                        {
+                            if (HasWon(player))
+                                return;
 
-                        if (player.Hand.Count == 1)
-                            AnnounceUno(CurrentPlayer);
+                            if (player.Hand.Count == 1)
+                                AnnounceUno(CurrentPlayer);
 
-                        drawnCard.Apply(this);
-                        if (Winner != null)
-                            return;
+                            effectCard.Apply(this);
+                            if (Winner != null)
+                                return;
+                        }
                     }
                 }
             }
@@ -388,7 +408,8 @@ public partial class Game
     }
 
     public bool IsPlayable(Card card) =>
-        card.IsWild || card.Color == CurrentColor || (!TopCard.IsWild && card.SharesSymbolWith(TopCard))
+        Version == GameVersions.Liars
+        || card.IsWild || card.Color == CurrentColor || (!TopCard.IsWild && card.SharesSymbolWith(TopCard))
         || CanMatchWithFlexColor(card);
 
     public Player NextPlayer() => players[WrapIndex(currentIndex + Direction)];
@@ -558,6 +579,10 @@ public partial class Game
     /// </summary>
     private bool IsIllegalWildDraw(Player player, Card card)
     {
+        //There's no Ilegal Wild Draw rule in these versions
+        if(Version == GameVersions.Liars || Version == GameVersions.NoMercy)
+            return false;
+
         if (!IsHitchCard(card))
             return false;
 
@@ -605,6 +630,7 @@ public partial class Game
                 "(at least 4 and not more than 8) so teammates are not adjacent.";
                 break;
             case GameVersions.Pop:
+            case GameVersions.Liars:
                 isNotValidPlayerCount = players.Count < 2 || players.Count > 6;
                 message = "The game needs at least 2 players and not more than 6 players.";
                 break;
@@ -661,7 +687,8 @@ public partial class Game
 
         player.Hand.Remove(card);
         ClearUnoAnnouncement(player);
-        Deck.Discard(TopCard);
+        Deck.Discard(activeLiarCard ?? TopCard);
+        activeLiarCard = null;
         TopCard = card;
         CurrentColor = card.Color; //Wild cards choose their color in Apply
         colorChosen = false;
@@ -735,7 +762,8 @@ public partial class Game
 
     private void DeclareWinner(Player player)
     {
-        Winner = player;
+        Winner ??= player;
+        winners.Add(player);
         string winnerMessage = Version == GameVersions.Teams
             ? $"\n{player.Name} and {GetTeammate(player).Name} win!"
             : $"\n{player.Name} wins!";

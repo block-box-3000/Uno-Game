@@ -370,4 +370,59 @@ public class HumanPlayer : Player
 
         return candidates[option - 1];
     }
+
+    public override Card ChooseLiarClaim(Game game, IReadOnlyList<Card> possibleClaims)
+    {
+        string options = string.Join("\n", possibleClaims.Select((card, i) => $"{i + 1}) {card}"));
+        int option = ui.AskNumber(
+            $"{Name}, name the card represented by your Liar card:\n{options}",
+            1,
+            possibleClaims.Count);
+        return possibleClaims[option - 1];
+    }
+
+    public override bool ShouldChallengeLiar(Game game, Player liar, Card declaredCard)
+    {
+        int option = ui.AskNumber(
+            $"{Name}, {liar.Name} claims {declaredCard} with a Liar card. Challenge?\n1) Challenge\n2) Accept",
+            1,
+            2);
+        return option == 1;
+    }
+
+    public override Card ChooseWildLiarsChallengeCard(Game game, CardColor claimedColor)
+    {
+        string cards = string.Join("\n", Hand.Select((card, i) => $"{i + 1}) {card.RevealIdentity()}"));
+        int option = ui.AskNumber(
+            $"{Name}, choose a face-down card to claim for {claimedColor}:\n{cards}",
+            1,
+            Hand.Count);
+        return Hand[option - 1];
+    }
+
+    public override Card ChooseWildLiarsChallengeClaim(
+        Game game,
+        CardColor claimedColor,
+        IReadOnlyList<Card> possibleClaims)
+    {
+        IReadOnlyList<Card> claims = possibleClaims
+            .Where(card => card.Color == claimedColor)
+            .ToList();
+        if (claims.Count == 0)
+            throw new InvalidOperationException($"There are no claims for color {claimedColor}.");
+
+        string options = string.Join("\n", claims.Select((card, i) => $"{i + 1}) {card.RevealIdentity()}"));
+        int option = ui.AskNumber(
+            $"{Name}, you have no {claimedColor} card. Name the card you are claiming:\n{options}",
+            1,
+            claims.Count);
+        return claims[option - 1];
+    }
+
+    public override Player ChooseWildLiarsChallengeTarget(Game game, IReadOnlyList<Player> candidates)
+    {
+        if (candidates.Count == 1)
+            return candidates[0];
+        return ChoosePlayer(candidates, "Wild Liar's Challenge: choose the player to reveal");
+    }
 }
