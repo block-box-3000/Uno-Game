@@ -17,6 +17,7 @@ public partial class Game
     public const int InitialHandSize = 7;
     private const int TurnDelayMs = 2000;
     private const int ShortDelayMs = 1500;
+    private const int MicroDelayMs = 1000;
     private const int FailedChallengeExtraCards = 2;
     private const int AcusedUnoExtraCards = 2;
 
@@ -113,7 +114,7 @@ public partial class Game
                 "Uno Teams requires an even number of players (at least 4) so teammates are not adjacent.");
 
         //Only Uno regular has expansion packs
-        if (version != GameVersions.Normal)
+        if (version != GameVersions.Normal || version != GameVersions.NoMercy)
             packs = ExpansionPacks.None;
 
         var players = new List<Player> { new HumanPlayer(0, ui) };
@@ -506,12 +507,16 @@ public partial class Game
     /// </summary>
     public void WildDrawCards(int drawCount)
     {
-        if (TryChallengeWildDraw($"Wild Draw {drawCount}", player =>
+        //Checks if the version admits Ilegal Wild Draw Challenge
+        if (Version != GameVersions.Liars)
         {
-            ui.Show($"{player.Name} draws {drawCount} card(s)", MessageStyle.Event);
-            DrawCards(player, drawCount);
-        }))
-            return;
+            if (TryChallengeWildDraw($"Wild Draw {drawCount}", player =>
+            {
+                ui.Show($"{player.Name} draws {drawCount} card(s)", MessageStyle.Event);
+                DrawCards(player, drawCount);
+            }))
+                return;
+        }
 
         PunishNextPlayer(drawCount, turnsSkipped: 1);
     }
@@ -579,10 +584,6 @@ public partial class Game
     /// </summary>
     private bool IsIllegalWildDraw(Player player, Card card)
     {
-        //There's no Ilegal Wild Draw rule in these versions
-        if(Version == GameVersions.Liars || Version == GameVersions.NoMercy)
-            return false;
-
         if (!IsHitchCard(card))
             return false;
 
@@ -631,6 +632,7 @@ public partial class Game
                 break;
             case GameVersions.Pop:
             case GameVersions.Liars:
+            case GameVersions.NoMercy:
                 isNotValidPlayerCount = players.Count < 2 || players.Count > 6;
                 message = "The game needs at least 2 players and not more than 6 players.";
                 break;

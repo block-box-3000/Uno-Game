@@ -29,7 +29,8 @@ namespace Uno_Game.Core
                 Player next = NextPlayer();
                 List<StackCard> answers = next.Hand
                     .OfType<StackCard>()
-                    .Where(CanAnswerStack)
+                    .Where(Version != GameVersions.NoMercy ? CanAnswerStack 
+                    : CanAnswerStackNoMercy)
                     .OrderBy(card => card.Points)
                     .ToList();
 
@@ -66,6 +67,20 @@ namespace Uno_Game.Core
         /// </summary>
         private bool CanAnswerStack(StackCard card) =>
             TopCard is StackCard || card.IsWild || card.Color == CurrentColor;
+        
+        private bool CanAnswerStackNoMercy(StackCard card)
+        {
+            if(TopCard is StackCard topCard)
+            {
+                if(card.IsWild || card.Color == CurrentColor)
+                {
+                    if (card.DrawCount >= topCard.DrawCount)
+                        return true;
+                }
+            }
+            return false;
+        }
+            
 
         /// <summary>Wild Stack Number: flips cards until a number card shows up. That number is the penalty.</summary>
         public int RevealPenaltyNumber()

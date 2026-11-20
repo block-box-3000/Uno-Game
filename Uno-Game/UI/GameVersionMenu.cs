@@ -18,6 +18,7 @@ namespace Uno_Game.UI
             ("Uno Pop!", GameVersions.Pop),
             ("Uno Party!", GameVersions.Party),
             ("Liar's Uno", GameVersions.Liars),
+            ("Uno No Mercy", GameVersions.NoMercy),
         };
 
         public static GameVersions Select(IGameUi ui)

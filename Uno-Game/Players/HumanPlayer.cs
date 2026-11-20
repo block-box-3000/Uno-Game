@@ -31,7 +31,7 @@ public class HumanPlayer : Player
             if (playableCards.Contains(chosen))
                 return chosen;
 
-            ui.Show("Select a valid card", MessageStyle.Warning);
+            ui.Show("Select a valid card\n", MessageStyle.Warning);
         }
     }
 

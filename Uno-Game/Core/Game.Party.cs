@@ -13,13 +13,13 @@ namespace Uno_Game.Core
             ClearPlayerConnections();
 
             ui.Show("3", MessageStyle.Event);
-            ui.Pause(1000);
+            ui.Pause(MicroDelayMs);
             ui.Show("2", MessageStyle.Event);
-            ui.Pause(1000);
+            ui.Pause(MicroDelayMs);
             ui.Show("1", MessageStyle.Event);
-            ui.Pause(1000);
+            ui.Pause(MicroDelayMs);
             ui.Show("Everyone point at another player!", MessageStyle.Event);
-            ui.Pause(1000);
+            ui.Pause(MicroDelayMs);
 
             var votes = players.ToDictionary(player => player, _ => 0);
             foreach (Player pointingPlayer in players)

@@ -6,6 +6,7 @@ using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
 using Uno_Game.Cards.FrenemiesPack;
 using Uno_Game.Cards.LiarsVersion;
+using Uno_Game.Cards.NoMercy;
 using Uno_Game.Cards.PartyVersion;
 using Uno_Game.Cards.PopVersion;
 using Uno_Game.Cards.ReversePack;
@@ -55,6 +56,7 @@ public class Deck
         : version == GameVersions.Pop ? PopDeck.CreateCards()
         : version == GameVersions.Party ? PartyDeck.CreateCards()
         : version == GameVersions.Liars ? LiarsDeck.CreateCards()
+        : version == GameVersions.NoMercy ? NoMercyDeck.CreateCards(packs)
         : CreateCards(packs);
 
     public Card Draw()
