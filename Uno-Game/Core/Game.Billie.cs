@@ -69,7 +69,7 @@ namespace Uno_Game.Core
                 {
                     UnoAnnouncedPlayers.Add(player);
 
-                    if(player == CurrentPlayer)
+                    if (player == CurrentPlayer)
                         AnnounceUno(player);
                     else
                     {
@@ -78,7 +78,7 @@ namespace Uno_Game.Core
                         ui.Show($"{player.Name} says: UNO!", MessageStyle.Event);
                     }
                 }
-                    
+
                 if (player.Hand.Count == 0)
                 {
                     DeclareWinner(player);

@@ -8,7 +8,7 @@ using Uno_Game.Players;
 
 namespace Uno_Game.Cards.PopVersion
 {
-    public class PopFlipCard: Card
+    public class PopFlipCard : Card
     {
         public int DrawFlipCardsCount { get; }
         public PopFlipCard(CardColor color, int drawFlipCardsCount) : base(color, points: 20)

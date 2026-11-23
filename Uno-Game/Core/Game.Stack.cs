@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Uno_Game.Cards.NoMercy;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Players;
 using Uno_Game.UI;
@@ -29,7 +30,7 @@ namespace Uno_Game.Core
                 Player next = NextPlayer();
                 List<StackCard> answers = next.Hand
                     .OfType<StackCard>()
-                    .Where(Version != GameVersions.NoMercy ? CanAnswerStack 
+                    .Where(Version != GameVersions.NoMercy ? CanAnswerStack
                     : CanAnswerStackNoMercy)
                     .OrderBy(card => card.Points)
                     .ToList();
@@ -47,11 +48,15 @@ namespace Uno_Game.Core
                 if (HasWon(next))
                     return;
 
+                if (answer is WildReverseDrawCard)
+                    Reverse();
+
                 //After PlayCard: PlayCard resets CurrentColor to the card's own color (Wild)
                 if (answer.IsWild)
                     ChooseColor();
 
                 int added = answer.GetPenalty(this);
+                added = ApplyNoMercyCoin(next, added);
                 stack += added;
                 ui.Show($"{next.Name} add {added} card(s) to the stack", MessageStyle.Event);
                 ui.Pause(ShortDelayMs);
@@ -67,12 +72,12 @@ namespace Uno_Game.Core
         /// </summary>
         private bool CanAnswerStack(StackCard card) =>
             TopCard is StackCard || card.IsWild || card.Color == CurrentColor;
-        
+
         private bool CanAnswerStackNoMercy(StackCard card)
         {
-            if(TopCard is StackCard topCard)
+            if (TopCard is StackCard topCard)
             {
-                if(card.IsWild || card.Color == CurrentColor)
+                if (card.IsWild || card.Color == CurrentColor)
                 {
                     if (card.DrawCount >= topCard.DrawCount)
                         return true;
@@ -80,7 +85,7 @@ namespace Uno_Game.Core
             }
             return false;
         }
-            
+
 
         /// <summary>Wild Stack Number: flips cards until a number card shows up. That number is the penalty.</summary>
         public int RevealPenaltyNumber()

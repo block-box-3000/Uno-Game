@@ -102,6 +102,7 @@ namespace Uno_Game.Core
             ui.Show($"{connected.Name} is connected to {player.Name} and also draws {count} card(s).",
                 MessageStyle.Event);
             DrawCardsWithoutConnection(connected, count);
+            CheckMercyRule(connected);
         }
 
         public void PileUpAction()
@@ -136,6 +137,7 @@ namespace Uno_Game.Core
                     ClearUnoAnnouncement(passingPlayer);
                     ui.Show($"{passingPlayer.Name} has no matching card and takes the whole mini pile " +
                             $"({miniPile.Count} card(s)).", MessageStyle.Warning);
+                    CheckMercyRule(passingPlayer);
                     return;
                 }
 

@@ -32,7 +32,7 @@ public abstract class Card
 
     /// <summary>Uno Flex: true for the number cards with the Flip symbol (whoever plays one flips their Power Card).</summary>
     public virtual bool FlipsPowerCard => false;
-    
+
     /// <summary>Uno Teams: true for the number cards with the Swap symbol (whoever plays one swap one of their cards with their team mate).</summary>
     public virtual bool SwapTeammateCard => false;
 

@@ -62,6 +62,9 @@ public partial class Game
             Card card = Deck.Draw();
             player.Hand.Add(card);
             drawn++;
+            CheckMercyRule(player);
+            if (eliminatedPlayers.Contains(player))
+                break;
 
             if (card.Color == color)
                 break;
@@ -69,6 +72,8 @@ public partial class Game
 
         ui.Show($"{player.Name} draws {drawn} card(s) until getting a {color} card", MessageStyle.Event);
         MirrorDrawToConnectedPlayer(player, drawn);
+        if (eliminatedPlayers.Contains(player) || Winner != null)
+            return;
 
         if (extraCards > 0)
             DrawCards(player, extraCards);

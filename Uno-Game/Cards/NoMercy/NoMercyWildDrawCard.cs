@@ -5,9 +5,9 @@ namespace Uno_Game.Cards.NoMercy
 {
     public class NoMercyWildDrawCard : StackCard
     {
-        public NoMercyWildDrawCard(int drawCount = 6, int points = 50) : base(CardColor.Wild, drawCount, points) 
+        public NoMercyWildDrawCard(int drawCount = 6, int points = 50) : base(CardColor.Wild, drawCount, points)
         {
-            
+
         }
 
         protected override string Name => $"Wild draw {DrawCount}";

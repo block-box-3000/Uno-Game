@@ -42,7 +42,7 @@ public partial class Game
             ui.Show($"{player.Name} already has one card", MessageStyle.Event);
 
         Card keep = player.ChoosePopUnoKeep(this, candidates);
-        
+
         if (!candidates.Contains(keep))
             throw new InvalidOperationException($"{player.Name} chose an invalid card to keep: {keep}");
 

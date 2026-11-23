@@ -60,12 +60,12 @@ public class PopDeck
     public static IEnumerable<PopCard> CreatePopCards()
     {
         yield return new PopCard(0);
-        
+
         for (int i = 0; i < 5; i++)
         {
             yield return new PopCard(1);
         }
-        
+
         for (int i = 0; i < 2; i++)
         {
             yield return new PopCard(2);

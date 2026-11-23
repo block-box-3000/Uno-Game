@@ -1,4 +1,5 @@
 ﻿using Uno_Game.Cards.FlipVersion;
+using Uno_Game.Cards.NoMercyExpansion;
 using Uno_Game.Cards.PopVersion;
 using Uno_Game.Core;
 
@@ -40,20 +41,28 @@ namespace Uno_Game.Cards.NoMercy
                 yield return new NoMercyWildDrawCard(drawCount: 10);
             }
 
-            //if (packs.HasFlag(ExpansionPacks.Stack))
-            //{
-            //    foreach (CardColor color in CardColors.Playable)
-            //    {
-            //        yield return new StackCard(color, drawCount: 1);
-            //        yield return new StackCard(color, drawCount: 2);
-            //    }
+            if (packs.HasFlag(ExpansionPacks.NoMercy))
+            {
+                foreach (CardColor color in CardColors.Playable)
+                {
+                    yield return new NumberCard(color, 10);
+                    yield return new NumberCard(color, 10);
+                }
 
-            //    for (int i = 0; i < 4; i++)
-            //    {
-            //        yield return new WildStackCard();
-            //        yield return new WildStackNumberCard();
-            //    }
-            //}
+                for (int i = 0; i < 8; i++)
+                {
+                    if(i < 2)
+                    {
+                        yield return new WildFinalAttackCard();
+                        yield return new WildSuddenDeathCard();
+                    }
+
+                    if(i < 4)
+                        yield return new WildReverseDrawCard(drawCount: 8);
+
+                    yield return new WildDiscardAllCard();
+                }
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.FlexVersion;
+using Uno_Game.Cards.NoMercyExpansion;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 using Uno_Game.UI;
@@ -121,7 +122,7 @@ public class HumanPlayer : Player
 
             if (option == drawOption && drawOption != 0)
                 return new TurnCardChoice(null, saidUno);
-            
+
             if (option == popOption && popOption != 0)
                 return new TurnCardChoice(null, saidUno, ChosePopCard: true);
 
@@ -425,4 +426,29 @@ public class HumanPlayer : Player
             return candidates[0];
         return ChoosePlayer(candidates, "Wild Liar's Challenge: choose the player to reveal");
     }
+
+    public override NoMercyCoin ChooseCoin(Game game)
+    {
+        int option = ui.AskNumber(
+            "Select your coin\n1) Mercy coin (replace your hand with 7 new cards)\n" +
+            "2) No Mercy coin (double a draw-card penalty once)",
+            1,
+            2);
+
+        return option == 1
+            ? new NoMercyCoin(Coins.Mercy)
+            : new NoMercyCoin(Coins.NoMercy);
+    }
+
+    public override bool ShouldUseMercyCoin(Game game) =>
+        ui.AskNumber(
+            $"{Name}, spend your Mercy coin to replace your hand with 7 new cards?\n1) Yes\n2) No",
+            1,
+            2) == 1;
+
+    public override bool ShouldUseNoMercyCoin(Game game, int drawCount) =>
+        ui.AskNumber(
+            $"{Name}, spend your No Mercy coin to double this draw penalty from {drawCount} to {drawCount * 2}?\n1) Yes\n2) No",
+            1,
+            2) == 1;
 }

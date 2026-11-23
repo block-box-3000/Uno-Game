@@ -7,9 +7,9 @@ namespace Uno_Game.Cards.NoMercy;
 public class WildReverseDrawCard : StackCard
 {
 
-    public WildReverseDrawCard(int drawCount = 4) : base (CardColor.Wild, drawCount, 50)
+    public WildReverseDrawCard(int drawCount = 4) : base(CardColor.Wild, drawCount, 50)
     {
-        //Falta revisar que cuando se juegue esta carta en el stack se aplique el reversa
+
     }
 
     protected override string Name => $"Wild Reverse Draw {DrawCount} Card";

@@ -1,6 +1,7 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.FlexVersion;
+using Uno_Game.Cards.NoMercyExpansion;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 
@@ -163,4 +164,11 @@ public abstract class Player
 
     /// <summary>Uno Liars, Wild Liar's Challenge: chooses another player to reveal their face-down card.</summary>
     public abstract Player ChooseWildLiarsChallengeTarget(Game game, IReadOnlyList<Player> candidates);
+
+    ///<summary>Uno No Mercy Expansion pack coin: The player selects a coin depending what they want to do.</summary>
+    public abstract NoMercyCoin ChooseCoin(Game game);
+
+    public abstract bool ShouldUseMercyCoin(Game game);
+
+    public abstract bool ShouldUseNoMercyCoin(Game game, int drawCount);
 }

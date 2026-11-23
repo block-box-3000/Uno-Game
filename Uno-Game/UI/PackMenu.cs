@@ -5,7 +5,7 @@ namespace Uno_Game.UI;
 public static class PackMenu
 {
     //Packs the player can turn on. To unlock a new pack, add it to this list.
-    private static readonly (string Name, ExpansionPacks Pack)[] Available =
+    private static readonly (string Name, ExpansionPacks Pack)[] NormalPacks =
     {
         ("Reverse pack", ExpansionPacks.Reverse),
         ("Stack pack", ExpansionPacks.Stack),
@@ -17,21 +17,28 @@ public static class PackMenu
         ("Comeback pack", ExpansionPacks.Comeback),
     };
 
-    public static ExpansionPacks Select(IGameUi ui)
+    private static readonly (string Name, ExpansionPacks Pack)[] NoMercyPacks =
     {
+        ("No Mercy expansion pack", ExpansionPacks.NoMercy),
+    };
+
+    public static ExpansionPacks Select(IGameUi ui, GameVersions version)
+    {
+        (string Name, ExpansionPacks Pack)[] available =
+            version == GameVersions.NoMercy ? NoMercyPacks : NormalPacks;
         ExpansionPacks packs = ExpansionPacks.None;
-        int startOption = Available.Length + 1;
+        int startOption = available.Length + 1;
         int option;
 
         do
         {
-            string lines = string.Join("\n", Available.Select((available, i) =>
-                $"{i + 1}) {available.Name} [{(packs.HasFlag(available.Pack) ? "ON" : "OFF")}]"));
+            string lines = string.Join("\n", available.Select((pack, i) =>
+                $"{i + 1}) {pack.Name} [{(packs.HasFlag(pack.Pack) ? "ON" : "OFF")}]"));
 
             option = ui.AskNumber($"Select an expansion pack\n{lines}\n{startOption}) Start Game", 1, startOption);
 
             if (option < startOption)
-                packs ^= Available[option - 1].Pack;
+                packs ^= available[option - 1].Pack;
         } while (option != startOption);
 
         return packs;

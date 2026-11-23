@@ -11,7 +11,7 @@ namespace Uno_Game.Cards.PopVersion
     {
         public DiscardAllCard(CardColor color) : base(color, 20)
         {
-            
+
         }
 
         protected override string Name => "Discard All Card";

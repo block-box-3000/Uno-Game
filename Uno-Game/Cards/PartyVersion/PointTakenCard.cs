@@ -9,7 +9,7 @@ namespace Uno_Game.Cards.PartyVersion
 {
     public class PointTakenCard : Card
     {
-        public PointTakenCard(CardColor color) : base (color, 20)
+        public PointTakenCard(CardColor color) : base(color, 20)
         {
 
         }

@@ -17,14 +17,14 @@ public class NumberCard : Card
 
     public override void Apply(Game game)
     {
-        //Only Number cards 0-7 have effects in special versions
-        if(game.Version == GameVersions.Liars || game.Version == GameVersions.NoMercy)
+        //Only Number cards 0-7,10 have effects in special versions
+        if (game.Version == GameVersions.Liars || game.Version == GameVersions.NoMercy)
         {
             if (Number == 0)
                 game.PassHands();
             else if (Number == 7)
                 game.SwapHands();
-            else if(Number == 10)
+            else if (Number == 10)
                 game.SkipEveryone();
         }
     }
