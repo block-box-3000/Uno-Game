@@ -1,6 +1,3 @@
-using Uno_Game.Cards;
-using Uno_Game.Cards.NoMercy;
-using Uno_Game.Cards.NoMercyExpansion;
 using Uno_Game.Core;
 using Uno_Game.UI;
 
@@ -13,10 +10,5 @@ ExpansionPacks packs = version == GameVersions.Normal || version == GameVersions
     ? PackMenu.Select(ui, version) : ExpansionPacks.None;
 Console.Clear();
 
-Game game = Game.CreateStandard(packs, ui, version: version, playerCount: 6);
-//var hand = game.Players[3].Hand;
-//hand.Clear();
-//hand.Add(new NoMercyWildDrawCard(drawCount: 10));
-//hand.Add(new ReverseCard(CardColor.Blue));
-//game.ForceIndex(3);
+Game game = Game.CreateStandard(packs, ui, version: version);
 game.Run();

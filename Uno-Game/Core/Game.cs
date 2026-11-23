@@ -120,8 +120,7 @@ public partial class Game
         if (version != GameVersions.Normal && version != GameVersions.NoMercy)
             packs = ExpansionPacks.None;
 
-        //var players = new List<Player> { new HumanPlayer(0, ui) };
-        var players = new List<Player>();
+        var players = new List<Player> { new HumanPlayer(0, ui) };
         for (int i = 0; i < playerCount; i++)
             players.Add(new NpcPlayer(i, rng));
 
