@@ -22,7 +22,7 @@ public interface IGameUi
 
     /// <summary>Shows the top card and the player's hand (playable cards highlighted).</summary>
     void ShowTable(Card topCard, CardColor currentColor, IReadOnlyList<Card> hand, Func<Card, bool> isPlayable);
-    
+
     /// <summary>Shows the current game direction to Human player </summary>
     void ShowGameDirection(int gameDirection);
 

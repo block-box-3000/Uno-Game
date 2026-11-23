@@ -18,7 +18,7 @@ public static class FlipDeck
             (dark[i], dark[j]) = (dark[j], dark[i]);
         }
 
-        return light.Select((face, i) => (Card) new TwoSidedCard(side, face, dark[i])).ToList();
+        return light.Select((face, i) => (Card)new TwoSidedCard(side, face, dark[i])).ToList();
     }
 
     public static List<Card> CreateLightFaces()

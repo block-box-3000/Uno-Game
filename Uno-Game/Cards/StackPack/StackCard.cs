@@ -26,7 +26,9 @@ public class StackCard : Card
         if (IsWild)
             game.ChooseColor();
 
-        game.ResolveStack(GetPenalty(game));
+        int penalty = GetPenalty(game);
+        penalty = game.ApplyNoMercyCoin(game.CurrentPlayer, penalty);
+        game.ResolveStack(penalty);
     }
 
     //A Stack card goes on another Stack card of any color. On a Draw card it needs the same color,

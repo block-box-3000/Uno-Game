@@ -1,8 +1,7 @@
-using System.Security;
-using System.Xml.Linq;
 using Uno_Game.Cards;
 using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
+using Uno_Game.Cards.NoMercyExpansion;
 using Uno_Game.Cards.PopVersion;
 using Uno_Game.Cards.ReversePack;
 using Uno_Game.Players;
@@ -19,6 +18,7 @@ public partial class Game
     public const int InitialHandSize = 7;
     private const int TurnDelayMs = 2000;
     private const int ShortDelayMs = 1500;
+    private const int MicroDelayMs = 1000;
     private const int FailedChallengeExtraCards = 2;
     private const int AcusedUnoExtraCards = 2;
 
@@ -51,6 +51,8 @@ public partial class Game
 
     private readonly HashSet<Player> UnoAnnouncedPlayers = new();
     public Player? Winner { get; private set; }
+    private readonly HashSet<Player> winners = new();
+    public IReadOnlyCollection<Player> Winners => winners;
     public Player? UnoPlayer => unoPlayer;
     public bool CanAccuseUno =>
         unoPlayer != null && unoPlayer != CurrentPlayer && !unoCalled && unoPlayer.Hand.Count == 1
@@ -63,17 +65,11 @@ public partial class Game
         GameVersions version = GameVersions.Normal)
     {
         this.players = players.ToList();
-        if (this.players.Count < 2)
-            throw new ArgumentException("A game needs at least 2 players.", nameof(players));
-        
-        if (version == GameVersions.Teams && (this.players.Count < 4 || this.players.Count > 8 
-            || this.players.Count % 2 != 0))
-            throw new ArgumentException("Uno Teams requires an even number of players " +
-                "(at least 4 and not more than 8) so teammates are not adjacent.", nameof(players));
-        
-        if (version == GameVersions.Party && (this.players.Count < 6 || this.players.Count > 14))
-            throw new ArgumentException("Uno Party requires at between 6-14 players.", nameof(players));
-        
+        (bool notValidPlayerCant, string warningMessage) = CheckPlayerCant(version);
+
+        if (notValidPlayerCant)
+            throw new ArgumentException(warningMessage, nameof(players));
+
         for (int i = 0; i < this.players.Count; i++)
         {
             if (this.players[i].Index != i)
@@ -84,12 +80,16 @@ public partial class Game
 
         if (Version == GameVersions.Teams)
             AssignTeammates();
+
         Deck = deck;
         Packs = packs;
         this.ui = ui;
         this.rng = rng ?? Random.Shared;
+
         if (Version == GameVersions.Pop)
             InitializePopDeck();
+
+        InitializeNoMercyCoins();
 
         foreach (Player player in this.players)
             InitialDrawCards(player, InitialHandSize);
@@ -113,15 +113,16 @@ public partial class Game
         GameVersions version = GameVersions.Normal)
     {
         if (version == GameVersions.Teams && (playerCount < 4 || playerCount % 2 != 0))
-            throw new ArgumentOutOfRangeException(nameof(playerCount), 
+            throw new ArgumentOutOfRangeException(nameof(playerCount),
                 "Uno Teams requires an even number of players (at least 4) so teammates are not adjacent.");
 
         //Only Uno regular has expansion packs
-        if (version != GameVersions.Normal)
+        if (version != GameVersions.Normal && version != GameVersions.NoMercy)
             packs = ExpansionPacks.None;
 
-        var players = new List<Player> { new HumanPlayer(0, ui) };
-        for (int i = 1; i < playerCount; i++)
+        //var players = new List<Player> { new HumanPlayer(0, ui) };
+        var players = new List<Player>();
+        for (int i = 0; i < playerCount; i++)
             players.Add(new NpcPlayer(i, rng));
 
         return new Game(players, new Deck(packs, rng, version), packs, ui, rng, version);
@@ -141,6 +142,19 @@ public partial class Game
     {
         Player player = CurrentPlayer;
         unoAnnouncedDuringTurn = false;
+
+        if (eliminatedPlayers.Contains(player))
+        {
+            ui.Show($"{player.Name} is out of the game", MessageStyle.Event);
+            ui.Pause(TurnDelayMs);
+            AdvanceTurn();
+            ui.Show("");
+            return;
+        }
+
+        UseMercyCoinAtTurnStart(player);
+        if (Winner != null || eliminatedPlayers.Contains(player))
+            return;
 
         if (Version == GameVersions.Teams && player.Hand.Count == 0)
         {
@@ -222,18 +236,19 @@ public partial class Game
         if (Version == GameVersions.Flex && player.IsHuman)
         {
             ui.Show("--------- Power Cards ----------", MessageStyle.Event);
-            foreach(Player p in players)
-                ui.Show($"{p.Name} Power Card: {(HasPower(p) ? "ON (green)" : "OFF (red)")}", 
+            foreach (Player p in players)
+                ui.Show($"{p.Name} Power Card: {(HasPower(p) ? "ON (green)" : "OFF (red)")}",
                      MessageStyle.Event);
             ui.Show("--------------------------------", MessageStyle.Event);
-        } 
+        }
 
         while (played < required)
         {
             List<Card> playable = player.Hand
-                .Where(card => IsPlayable(card) && (player.IsHuman || !IsIllegalWildDraw(player, card)))
+                .Where(card => IsPlayable(card) &&
+                    (player.IsHuman || card.IsLiarCard || !IsIllegalWildDraw(player, card)))
                 .ToList();
-            
+
             if (playable.Count == 0)
             {
                 if (played == 0 && Version == GameVersions.Pop)
@@ -258,10 +273,13 @@ public partial class Game
             if (required > 1)
                 ui.Show($"{player.Name}: card {played + 1} of {required}", MessageStyle.Event);
 
+            bool canDraw = Version != GameVersions.NoMercy ?
+                required == 1 && played == 0 : false;
+
             TurnCardChoice choice = player.ChooseTurnCard(
                 this,
                 playable,
-                canDraw: required == 1 && played == 0,
+                canDraw: canDraw,
                 canSayUno: player.Hand.Count == 2,
                 canAccuseUno: played == 0 && CanAccuseUno);
             currentPlayerSaidUno |= choice.SaidUno;
@@ -282,20 +300,27 @@ public partial class Game
             if (Version == GameVersions.Flex && card is FlexCard flexCard)
                 ChooseFlexSide(player, flexCard);
 
-            PlayCard(player, card, announce: true);
+            Card? effectCard = PlayCardWithLiars(player, card, announce: true);
             played++;
-            lastPlayed = card;
+            if (effectCard == null)
+            {
+                lastPlayed = null;
+                played = required;
+                break;
+            }
+
+            lastPlayed = effectCard;
             if (HasWon(player))
                 return;
 
             if (played == required)
             {
                 //Only the last card of the turn has its effect
-                card.Apply(this);
+                effectCard.Apply(this);
                 if (Winner != null)
                     return;
             }
-            else if (card.IsWild)
+            else if (effectCard.IsWild)
             {
                 //Not the last card, but the color is needed to keep playing
                 ChooseColor();
@@ -320,33 +345,100 @@ public partial class Game
                 }
                 else
                 {
-                    ui.Show(choseToDraw
-                        ? $"{player.Name} chooses to draw 1 card"
-                        : $"No cards available for {player.Name}, draw 1 card",
-                        choseToDraw ? MessageStyle.Event : MessageStyle.Warning);
-                    Card drawnCard = Deck.Draw();
-                    player.Hand.Add(drawnCard);
-                    ClearUnoAnnouncement(player);
-                    MirrorDrawToConnectedPlayer(player, 1);
-
-                    if (trickPlayer == null
-                        && IsPlayable(drawnCard)
-                        && (player.IsHuman || !IsIllegalWildDraw(player, drawnCard))
-                        && player.ShouldPlayDrawnCard(this, drawnCard))
+                    if (Version == GameVersions.NoMercy)
                     {
-                        if (Version == GameVersions.Flex && drawnCard is FlexCard flexCard)
-                            ChooseFlexSide(player, flexCard);
+                        ui.Show($"{player.Name} has no playable card and draws until one appears",
+                            MessageStyle.Warning);
 
-                        PlayCard(player, drawnCard, announce: true);
-                        if (HasWon(player))
+                        Card drawnCard;
+                        int drawCount = 0;
+                        while (true)
+                        {
+                            drawnCard = Deck.Draw();
+                            player.Hand.Add(drawnCard);
+                            CheckMercyRule(player);
+
+                            if (player.IsHuman)
+                                ui.Show($"You draw: {drawnCard}", MessageStyle.Event);
+                            else
+                                drawCount++;
+
+                            ClearUnoAnnouncement(player);
+                            MirrorDrawToConnectedPlayer(player, 1);
+                            if (Winner != null || eliminatedPlayers.Contains(player))
+                                return;
+
+                            if (IsPlayable(drawnCard)
+                                && (player.IsHuman || drawnCard.IsLiarCard || !IsIllegalWildDraw(player, drawnCard)))
+                                break;
+                        }
+
+                        if (!player.IsHuman)
+                            ui.Show($"{player.Name} draw {drawCount} card(s)", MessageStyle.Event);
+
+                        if (trickPlayer == null)
+                        {
+                            if (Version == GameVersions.Flex && drawnCard is FlexCard flexCard)
+                                ChooseFlexSide(player, flexCard);
+
+                            Card? effectCard = PlayCardWithLiars(player, drawnCard, announce: true);
+                            if (effectCard != null)
+                            {
+                                if (HasWon(player))
+                                    return;
+
+                                if (player.Hand.Count == 1)
+                                    AnnounceUno(player);
+
+                                effectCard.Apply(this);
+                                if (Winner != null)
+                                    return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ui.Show(choseToDraw
+                            ? $"{player.Name} chooses to draw 1 card"
+                            : $"No cards available for {player.Name}, draw 1 card",
+                            choseToDraw ? MessageStyle.Event : MessageStyle.Warning);
+                        Card drawnCard = Deck.Draw();
+                        player.Hand.Add(drawnCard);
+                        CheckMercyRule(player);
+                        if (player.IsHuman)
+                        {
+                            string drawnCardName = drawnCard.IsLiarCard
+                                ? $"{drawnCard.RevealIdentity()} (Liar card)"
+                                : drawnCard.ToString();
+                            ui.Show($"You draw: {drawnCardName}", MessageStyle.Event);
+                        }
+                        ClearUnoAnnouncement(player);
+                        MirrorDrawToConnectedPlayer(player, 1);
+                        if (Winner != null || eliminatedPlayers.Contains(player))
                             return;
 
-                        if (player.Hand.Count == 1)
-                            AnnounceUno(CurrentPlayer);
+                        if (trickPlayer == null
+                            && IsPlayable(drawnCard)
+                            && (player.IsHuman || drawnCard.IsLiarCard || !IsIllegalWildDraw(player, drawnCard))
+                            && player.ShouldPlayDrawnCard(this, drawnCard))
+                        {
+                            if (Version == GameVersions.Flex && drawnCard is FlexCard flexCard)
+                                ChooseFlexSide(player, flexCard);
 
-                        drawnCard.Apply(this);
-                        if (Winner != null)
-                            return;
+                            Card? effectCard = PlayCardWithLiars(player, drawnCard, announce: true);
+                            if (effectCard != null)
+                            {
+                                if (HasWon(player))
+                                    return;
+
+                                if (player.Hand.Count == 1)
+                                    AnnounceUno(CurrentPlayer);
+
+                                effectCard.Apply(this);
+                                if (Winner != null)
+                                    return;
+                            }
+                        }
                     }
                 }
             }
@@ -378,6 +470,7 @@ public partial class Game
         unoCalled = true;
         unoAnnouncedDuringTurn = true;
         ui.Show($"{player.Name} says: UNO!", MessageStyle.Event);
+        ui.Pause(MicroDelayMs);
     }
 
     public void AccuseUno()
@@ -394,13 +487,24 @@ public partial class Game
     }
 
     public bool IsPlayable(Card card) =>
-        card.IsWild || card.Color == CurrentColor || (!TopCard.IsWild && card.SharesSymbolWith(TopCard))
+        Version == GameVersions.Liars
+        || card.IsWild || card.Color == CurrentColor || (!TopCard.IsWild && card.SharesSymbolWith(TopCard))
         || CanMatchWithFlexColor(card);
 
-    public Player NextPlayer() => players[WrapIndex(currentIndex + Direction)];
+    public Player NextPlayer() => NextPlayer(CurrentPlayer);
 
-    public Player NextPlayer(Player player) =>
-        players[WrapIndex(player.Index + Direction)];
+    public Player NextPlayer(Player player)
+    {
+        int index = player.Index;
+
+        do
+        {
+            index = WrapIndex(index + Direction);
+        }
+        while (eliminatedPlayers.Contains(players[index]));
+
+        return players[index];
+    }
 
     // ---------------------------------------------------------------- operations used by cards
 
@@ -491,12 +595,16 @@ public partial class Game
     /// </summary>
     public void WildDrawCards(int drawCount)
     {
-        if (TryChallengeWildDraw($"Wild Draw {drawCount}", player =>
+        //Checks if the version admits Ilegal Wild Draw Challenge
+        if (Version != GameVersions.Liars)
         {
-            ui.Show($"{player.Name} draws {drawCount} card(s)", MessageStyle.Event);
-            DrawCards(player, drawCount);
-        }))
-            return;
+            if (TryChallengeWildDraw($"Wild Draw {drawCount}", player =>
+            {
+                ui.Show($"{player.Name} draws {drawCount} card(s)", MessageStyle.Event);
+                DrawCards(player, drawCount);
+            }))
+                return;
+        }
 
         PunishNextPlayer(drawCount, turnsSkipped: 1);
     }
@@ -536,7 +644,7 @@ public partial class Game
         {
             ui.Show($"{victim.Name} challenges {attacker.Name}! {attacker.Name} shows their hand:", MessageStyle.Event);
             //Only if the human is envolved can see the cards of the hand
-            if(attacker.IsHuman || victim.IsHuman)
+            if (attacker.IsHuman || victim.IsHuman)
                 ui.ShowHands(new List<(string PlayerName, IReadOnlyList<Card> Cards)> { (attacker.Name, attacker.Hand.ToList()) });
             ui.Pause(ShortDelayMs);
 
@@ -584,10 +692,45 @@ public partial class Game
     /// The list of cards with the special rule that should be the last option to play.
     /// </summary>
     public bool IsHitchCard(Card card) =>
-    card.Face is WildDrawCard or WildDrawColorCard || 
+    card.Face is WildDrawCard or WildDrawColorCard ||
         card is FlexCard { Flex: TargetDrawCard { DrawCount: 4 } };
 
     // ---------------------------------------------------------------- internals
+
+    private (bool, string) CheckPlayerCant(GameVersions version)
+    {
+        bool isNotValidPlayerCount = false;
+        string message = "";
+        switch (version)
+        {
+            case GameVersions.Normal:
+            case GameVersions.Flip:
+                isNotValidPlayerCount = players.Count < 2 || players.Count > 10;
+                message = "The game needs at least 2 players and not more than 10 players.";
+                break;
+            case GameVersions.Flex:
+                isNotValidPlayerCount = players.Count < 2 || players.Count > 8;
+                message = "The game needs at least 2 players and not more than 8 players.";
+                break;
+            case GameVersions.Teams:
+                isNotValidPlayerCount = players.Count < 4 || players.Count > 8 ||
+                    players.Count % 2 != 0;
+                message = "Uno Teams requires an even number of players " +
+                "(at least 4 and not more than 8) so teammates are not adjacent.";
+                break;
+            case GameVersions.Pop:
+            case GameVersions.Liars:
+            case GameVersions.NoMercy:
+                isNotValidPlayerCount = players.Count < 2 || players.Count > 6;
+                message = "The game needs at least 2 players and not more than 6 players.";
+                break;
+            case GameVersions.Party:
+                isNotValidPlayerCount = players.Count < 6 || players.Count > 14;
+                message = "The game needs at least 6 players and not more than 14 players.";
+                break;
+        }
+        return (isNotValidPlayerCount, message);
+    }
 
     private void ApplyPunishment(Player victim, Player source, int drawCount, int turnsSkipped)
     {
@@ -608,6 +751,7 @@ public partial class Game
     {
         DrawCardsWithoutConnection(player, count);
         MirrorDrawToConnectedPlayer(player, count);
+        CheckMercyRule(player);
     }
 
     private void DrawCardsWithoutConnection(Player player, int count)
@@ -625,7 +769,23 @@ public partial class Game
     private void SkipFrom(Player firstSkipped, int turns)
     {
         ui.Show($"Skipped {turns} turn(s)", MessageStyle.Event);
-        currentIndex = WrapIndex(firstSkipped.Index + (turns - 1) * Direction);
+        int index = firstSkipped.Index;
+
+        if (Version == GameVersions.NoMercy)
+        {
+            for (int skipped = 0; skipped < turns; skipped++)
+            {
+                while (eliminatedPlayers.Contains(players[index]))
+                    index = WrapIndex(index + Direction);
+
+                if (skipped + 1 < turns)
+                    index = WrapIndex(index + Direction);
+            }
+            currentIndex = index;
+            return;
+        }
+
+        currentIndex = WrapIndex(index + (turns - 1) * Direction);
     }
 
     private void PlayCard(Player player, Card card, bool announce)
@@ -634,7 +794,8 @@ public partial class Game
 
         player.Hand.Remove(card);
         ClearUnoAnnouncement(player);
-        Deck.Discard(TopCard);
+        Deck.Discard(activeLiarCard ?? TopCard);
+        activeLiarCard = null;
         TopCard = card;
         CurrentColor = card.Color; //Wild cards choose their color in Apply
         colorChosen = false;
@@ -708,7 +869,8 @@ public partial class Game
 
     private void DeclareWinner(Player player)
     {
-        Winner = player;
+        Winner ??= player;
+        winners.Add(player);
         string winnerMessage = Version == GameVersions.Teams
             ? $"\n{player.Name} and {GetTeammate(player).Name} win!"
             : $"\n{player.Name} wins!";
@@ -728,18 +890,27 @@ public partial class Game
     {
         if (forcedNext != null)
         {
-            currentIndex = forcedNext.Index;
+            Player forced = forcedNext;
             forcedNext = null;
-            return;
+            if (!eliminatedPlayers.Contains(forced))
+            {
+                currentIndex = forced.Index;
+                return;
+            }
         }
 
         if (repeatTurn)
         {
             repeatTurn = false;
-            return;
+            if (!eliminatedPlayers.Contains(CurrentPlayer))
+                return;
         }
 
-        currentIndex = WrapIndex(currentIndex + Direction);
+        do
+        {
+            currentIndex = WrapIndex(currentIndex + Direction);
+        }
+        while (eliminatedPlayers.Contains(CurrentPlayer));
     }
 
     private int WrapIndex(int index) => ((index % players.Count) + players.Count) % players.Count;

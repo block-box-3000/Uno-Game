@@ -1,6 +1,7 @@
 using Uno_Game.Cards;
 using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.FlexVersion;
+using Uno_Game.Cards.NoMercyExpansion;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 using Uno_Game.UI;
@@ -31,7 +32,7 @@ public class HumanPlayer : Player
             if (playableCards.Contains(chosen))
                 return chosen;
 
-            ui.Show("Select a valid card", MessageStyle.Warning);
+            ui.Show("Select a valid card\n", MessageStyle.Warning);
         }
     }
 
@@ -121,7 +122,7 @@ public class HumanPlayer : Player
 
             if (option == drawOption && drawOption != 0)
                 return new TurnCardChoice(null, saidUno);
-            
+
             if (option == popOption && popOption != 0)
                 return new TurnCardChoice(null, saidUno, ChosePopCard: true);
 
@@ -370,4 +371,84 @@ public class HumanPlayer : Player
 
         return candidates[option - 1];
     }
+
+    public override Card ChooseLiarClaim(Game game, IReadOnlyList<Card> possibleClaims)
+    {
+        string options = string.Join("\n", possibleClaims.Select((card, i) => $"{i + 1}) {card}"));
+        int option = ui.AskNumber(
+            $"{Name}, name the card represented by your Liar card:\n{options}",
+            1,
+            possibleClaims.Count);
+        return possibleClaims[option - 1];
+    }
+
+    public override bool ShouldChallengeLiar(Game game, Player liar, Card declaredCard)
+    {
+        int option = ui.AskNumber(
+            $"{Name}, {liar.Name} claims {declaredCard} with a Liar card. Challenge?\n1) Challenge\n2) Accept",
+            1,
+            2);
+        return option == 1;
+    }
+
+    public override Card ChooseWildLiarsChallengeCard(Game game, CardColor claimedColor)
+    {
+        string cards = string.Join("\n", Hand.Select((card, i) => $"{i + 1}) {card.RevealIdentity()}"));
+        int option = ui.AskNumber(
+            $"{Name}, choose a face-down card to claim for {claimedColor}:\n{cards}",
+            1,
+            Hand.Count);
+        return Hand[option - 1];
+    }
+
+    public override Card ChooseWildLiarsChallengeClaim(
+        Game game,
+        CardColor claimedColor,
+        IReadOnlyList<Card> possibleClaims)
+    {
+        IReadOnlyList<Card> claims = possibleClaims
+            .Where(card => card.Color == claimedColor)
+            .ToList();
+        if (claims.Count == 0)
+            throw new InvalidOperationException($"There are no claims for color {claimedColor}.");
+
+        string options = string.Join("\n", claims.Select((card, i) => $"{i + 1}) {card.RevealIdentity()}"));
+        int option = ui.AskNumber(
+            $"{Name}, you have no {claimedColor} card. Name the card you are claiming:\n{options}",
+            1,
+            claims.Count);
+        return claims[option - 1];
+    }
+
+    public override Player ChooseWildLiarsChallengeTarget(Game game, IReadOnlyList<Player> candidates)
+    {
+        if (candidates.Count == 1)
+            return candidates[0];
+        return ChoosePlayer(candidates, "Wild Liar's Challenge: choose the player to reveal");
+    }
+
+    public override NoMercyCoin ChooseCoin(Game game)
+    {
+        int option = ui.AskNumber(
+            "Select your coin\n1) Mercy coin (replace your hand with 7 new cards)\n" +
+            "2) No Mercy coin (double a draw-card penalty once)",
+            1,
+            2);
+
+        return option == 1
+            ? new NoMercyCoin(Coins.Mercy)
+            : new NoMercyCoin(Coins.NoMercy);
+    }
+
+    public override bool ShouldUseMercyCoin(Game game) =>
+        ui.AskNumber(
+            $"{Name}, spend your Mercy coin to replace your hand with 7 new cards?\n1) Yes\n2) No",
+            1,
+            2) == 1;
+
+    public override bool ShouldUseNoMercyCoin(Game game, int drawCount) =>
+        ui.AskNumber(
+            $"{Name}, spend your No Mercy coin to double this draw penalty from {drawCount} to {drawCount * 2}?\n1) Yes\n2) No",
+            1,
+            2) == 1;
 }

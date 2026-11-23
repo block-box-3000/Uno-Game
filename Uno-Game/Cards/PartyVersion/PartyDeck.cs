@@ -23,7 +23,7 @@ namespace Uno_Game.Cards.PartyVersion
                     yield return new ReverseCard(color);
                 }
 
-                for(int i = 0; i < 2; i++)
+                for (int i = 0; i < 2; i++)
                     yield return new DrawCard(color);
 
                 yield return new PointTakenCard(color);

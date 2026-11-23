@@ -32,15 +32,20 @@ public abstract class Card
 
     /// <summary>Uno Flex: true for the number cards with the Flip symbol (whoever plays one flips their Power Card).</summary>
     public virtual bool FlipsPowerCard => false;
-    
+
     /// <summary>Uno Teams: true for the number cards with the Swap symbol (whoever plays one swap one of their cards with their team mate).</summary>
     public virtual bool SwapTeammateCard => false;
 
     /// <summary>Speed pack: how many speed levels this card adds when played (its "Speed Up" icons).</summary>
     public virtual int SpeedUp => 0;
 
+    /// <summary>Uno Liars: this card's identity is hidden until challenged.</summary>
+    public bool IsLiarCard { get; set; }
+
     /// <summary>The effect of the card. Called right after the card is played.</summary>
     public abstract void Apply(Game game);
 
-    public override string ToString() => IsWild ? Name : $"{Color} {Name}";
+    public string RevealIdentity() => IsWild ? Name : $"{Color} {Name}";
+
+    public override string ToString() => IsLiarCard ? "Liar card" : RevealIdentity();
 }

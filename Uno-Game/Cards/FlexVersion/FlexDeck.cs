@@ -20,7 +20,7 @@ public static class FlexDeck
             {
                 bool flip = HasFlipSymbol(color, number);
                 cards.Add(NumberFace(color, number, flip));
-                
+
                 CardColor auxColor = new();
 
                 switch (color)
@@ -59,7 +59,7 @@ public static class FlexDeck
                         break;
                 }
 
-                cards.Add(new FlexCard(new NumberCard(color, number), 
+                cards.Add(new FlexCard(new NumberCard(color, number),
                     new NumberCard(auxColor, number)));
             }
 

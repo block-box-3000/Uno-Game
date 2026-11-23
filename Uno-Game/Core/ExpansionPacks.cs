@@ -13,6 +13,6 @@ public enum ExpansionPacks
     Comeback = 1 << 6,
     Billie = 1 << 7,
 
-    // Planned packs (not implemented yet)
+    //No Mercy expansion packs
     NoMercy = 1 << 8
 }

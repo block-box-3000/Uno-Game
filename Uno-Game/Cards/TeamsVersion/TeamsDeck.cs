@@ -15,7 +15,7 @@ public static class TeamsDeck
                 yield return new NumberCard(color, number);
 
                 //Swap number cards only for numbers 1-5
-                if(number < 6)
+                if (number < 6)
                     yield return new NumberSwapCard(color, number);
                 else
                     yield return new NumberCard(color, number);

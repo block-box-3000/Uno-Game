@@ -4,7 +4,7 @@ namespace Uno_Game.Cards.PartyVersion
 {
     public class WildPileUpCard : Card
     {
-        public WildPileUpCard() : base (CardColor.Wild, 50)
+        public WildPileUpCard() : base(CardColor.Wild, 50)
         {
 
         }

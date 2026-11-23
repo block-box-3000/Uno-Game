@@ -4,7 +4,7 @@ namespace Uno_Game.Cards;
 
 public class WildDrawCard : Card
 {
-    int DrawCount { get; init; }
+    protected int DrawCount { get; init; }
     public WildDrawCard(int drawCount = 4, int turnsSkipped = 1)
         : base(CardColor.Wild, points: 50)
     {

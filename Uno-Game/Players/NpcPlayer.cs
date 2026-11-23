@@ -2,6 +2,7 @@ using Uno_Game.Cards;
 using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
+using Uno_Game.Cards.NoMercyExpansion;
 using Uno_Game.Cards.StackPack;
 using Uno_Game.Core;
 
@@ -54,10 +55,10 @@ public class NpcPlayer : Player
         {
             if (canDraw && game.Version == GameVersions.Pop && rng.Next(1, 4) == 1)
                 return new TurnCardChoice(null, false, ChosePopCard: true);
-            
+
             return new TurnCardChoice(null, false);
         }
-            
+
 
         Card? card = canDraw
             ? ChooseCardOrDraw(game, playableCards)
@@ -208,4 +209,42 @@ public class NpcPlayer : Player
 
     public override Card ChoosePopUnoKeep(Game game, IReadOnlyList<Card> candidates) =>
         candidates.FirstOrDefault(card => card.IsWild) ?? candidates.OrderBy(card => card.Points).First();
+
+    public override Card ChooseLiarClaim(Game game, IReadOnlyList<Card> possibleClaims) =>
+        possibleClaims[rng.Next(possibleClaims.Count)];
+
+    public override bool ShouldChallengeLiar(Game game, Player liar, Card declaredCard) =>
+        rng.Next(1, 11) <= 5;
+
+    public override Card ChooseWildLiarsChallengeCard(Game game, CardColor claimedColor)
+    {
+        IReadOnlyList<Card> matching = Hand
+            .Where(card => card.Color == claimedColor)
+            .ToList();
+        IReadOnlyList<Card> candidates = matching.Count > 0 ? matching : Hand;
+        return candidates[rng.Next(candidates.Count)];
+    }
+
+    public override Card ChooseWildLiarsChallengeClaim(
+        Game game,
+        CardColor claimedColor,
+        IReadOnlyList<Card> possibleClaims)
+    {
+        IReadOnlyList<Card> claims = possibleClaims
+            .Where(card => card.Color == claimedColor)
+            .ToList();
+        return claims[rng.Next(claims.Count)];
+    }
+
+    public override Player ChooseWildLiarsChallengeTarget(Game game, IReadOnlyList<Player> candidates) =>
+        candidates.OrderBy(player => player.Hand.Count).First();
+
+    public override NoMercyCoin ChooseCoin(Game game) => rng.Next(1, 11) < 8 ?
+        new NoMercyCoin(Coins.Mercy) : new NoMercyCoin(Coins.NoMercy);
+
+    public override bool ShouldUseMercyCoin(Game game) =>
+        Hand.Count >= 18;
+
+    public override bool ShouldUseNoMercyCoin(Game game, int drawCount) =>
+        drawCount >= 6 || rng.Next(1, 11) <= 3;
 }

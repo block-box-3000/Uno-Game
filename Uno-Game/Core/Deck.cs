@@ -5,6 +5,8 @@ using Uno_Game.Cards.DefensePack;
 using Uno_Game.Cards.FlexVersion;
 using Uno_Game.Cards.FlipVersion;
 using Uno_Game.Cards.FrenemiesPack;
+using Uno_Game.Cards.LiarsVersion;
+using Uno_Game.Cards.NoMercy;
 using Uno_Game.Cards.PartyVersion;
 using Uno_Game.Cards.PopVersion;
 using Uno_Game.Cards.ReversePack;
@@ -53,6 +55,8 @@ public class Deck
         : version == GameVersions.Teams ? TeamsDeck.CreateCards()
         : version == GameVersions.Pop ? PopDeck.CreateCards()
         : version == GameVersions.Party ? PartyDeck.CreateCards()
+        : version == GameVersions.Liars ? LiarsDeck.CreateCards()
+        : version == GameVersions.NoMercy ? NoMercyDeck.CreateCards(packs)
         : CreateCards(packs);
 
     public Card Draw()
@@ -84,7 +88,7 @@ public class Deck
     /// <summary>The first card of the game is always a number card.</summary>
     public Card TakeStartingCard()
     {
-        int index = drawPile.FindIndex(card => card.Face is NumberCard);
+        int index = drawPile.FindIndex(card => !card.IsLiarCard && card.Face is NumberCard);
         if (index < 0)
             throw new InvalidOperationException("The deck has no number cards.");
 

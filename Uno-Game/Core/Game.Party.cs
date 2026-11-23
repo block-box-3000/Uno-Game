@@ -13,13 +13,13 @@ namespace Uno_Game.Core
             ClearPlayerConnections();
 
             ui.Show("3", MessageStyle.Event);
-            ui.Pause(1000);
+            ui.Pause(MicroDelayMs);
             ui.Show("2", MessageStyle.Event);
-            ui.Pause(1000);
+            ui.Pause(MicroDelayMs);
             ui.Show("1", MessageStyle.Event);
-            ui.Pause(1000);
+            ui.Pause(MicroDelayMs);
             ui.Show("Everyone point at another player!", MessageStyle.Event);
-            ui.Pause(1000);
+            ui.Pause(MicroDelayMs);
 
             var votes = players.ToDictionary(player => player, _ => 0);
             foreach (Player pointingPlayer in players)
@@ -102,6 +102,7 @@ namespace Uno_Game.Core
             ui.Show($"{connected.Name} is connected to {player.Name} and also draws {count} card(s).",
                 MessageStyle.Event);
             DrawCardsWithoutConnection(connected, count);
+            CheckMercyRule(connected);
         }
 
         public void PileUpAction()
@@ -136,6 +137,7 @@ namespace Uno_Game.Core
                     ClearUnoAnnouncement(passingPlayer);
                     ui.Show($"{passingPlayer.Name} has no matching card and takes the whole mini pile " +
                             $"({miniPile.Count} card(s)).", MessageStyle.Warning);
+                    CheckMercyRule(passingPlayer);
                     return;
                 }
 

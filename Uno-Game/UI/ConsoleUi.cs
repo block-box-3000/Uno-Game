@@ -35,14 +35,16 @@ public class ConsoleUi : IGameUi
         Console.ResetColor();
 
         //A wild card on the pile shows the color that was chosen for it
-        string top = topCard.IsWild ? $"{topCard} ({currentColor})" : topCard.ToString();
+        string top = topCard.IsLiarCard
+            ? "Liar card"
+            : topCard.IsWild ? $"{topCard} ({currentColor})" : topCard.ToString();
         Console.WriteLine("Actual card: " + top + "\n");
         Console.WriteLine("Your hand:");
 
         for (int i = 0; i < hand.Count; i++)
         {
             Console.ForegroundColor = isPlayable(hand[i]) ? ConsoleColor.Green : ConsoleColor.Red;
-            Console.WriteLine($"{i + 1}) {hand[i]}");
+            Console.WriteLine($"{i + 1}) {GetHandDisplayName(hand[i])}");
         }
 
         Console.ResetColor();
@@ -61,8 +63,10 @@ public class ConsoleUi : IGameUi
             //Each card in its own color
             for (int i = 0; i < cards.Count; i++)
             {
-                Console.ForegroundColor = ToConsoleColor(cards[i].Color);
-                Console.Write(cards[i]);
+                Console.ForegroundColor = cards[i].IsLiarCard
+                    ? ConsoleColor.Gray
+                    : ToConsoleColor(cards[i].Color);
+                Console.Write(GetDisplayName(cards[i]));
                 Console.ResetColor();
                 if (i < cards.Count - 1)
                     Console.Write(", ");
@@ -96,6 +100,12 @@ public class ConsoleUi : IGameUi
         CardColor.Purple => ConsoleColor.DarkMagenta,
         _ => ConsoleColor.White
     };
+
+    private static string GetDisplayName(Card card) =>
+        card.IsLiarCard ? "Liar card" : card.ToString();
+
+    private static string GetHandDisplayName(Card card) =>
+        card.IsLiarCard ? $"{card.RevealIdentity()} (Liar card)" : card.ToString();
 
     public int AskNumber(string prompt, int min, int max)
     {

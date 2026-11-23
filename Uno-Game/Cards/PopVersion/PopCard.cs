@@ -33,8 +33,8 @@ namespace Uno_Game.Cards.PopVersion
                 game.PopUno(player);
         }
 
-        public override string ToString() => IsPopUno ? $"Pop Instant Uno Card" 
-            : IsPopPunish ? $"+{DrawCount} Pop Card" 
+        public override string ToString() => IsPopUno ? $"Pop Instant Uno Card"
+            : IsPopPunish ? $"+{DrawCount} Pop Card"
             : $"+{DrawCount} Card";
     }
 }

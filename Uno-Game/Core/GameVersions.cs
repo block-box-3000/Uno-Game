@@ -14,8 +14,6 @@ public enum GameVersions
     Teams = 3,
     Pop = 4,
     Party = 5,
-
-    // Planned modes (not implemented yet)
     Liars = 6,
     NoMercy = 7,
 }
